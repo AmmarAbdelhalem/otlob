@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('reference_uuid');
-            $table->foreignId('order_id')->nullable()->constrained('orders')->cascadeOnDelete();
+            $table->foreignUuid('order_id')->nullable()->constrained('orders')->cascadeOnDelete();
             $table->string('transaction_type');
             $table->text('description');
             $table->timestamps();

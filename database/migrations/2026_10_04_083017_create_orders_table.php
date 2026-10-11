@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('parent_id')->nullable(true)->constrained('orders')->cascadeOnDelete();
+            $table->foreignUuid('parent_id')->nullable(true)->constrained('orders')->cascadeOnDelete();
             $table->string('order_code')->unique(true);
-            $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
-            $table->foreignId('merchant_id')->nullable(true)->constrained('merchants')->cascadeOnDelete();
-            $table->foreignId('courier_id')->nullable(true)->constrained('couriers')->cascadeOnDelete();
+            $table->foreignUuid('customer_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('merchant_id')->nullable(true)->constrained('merchants')->cascadeOnDelete();
+            $table->foreignUuid('courier_id')->nullable(true)->constrained('courier_profiles')->cascadeOnDelete();
             $table->decimal('subtotal');
             $table->decimal('delivery_fee'); // <- This will be for the courier
             $table->decimal('service_fee'); // <- This will be for Otolb parts

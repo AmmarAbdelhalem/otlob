@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('wallets', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->nullable(true)->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->nullable(true)->constrained('users')->cascadeOnDelete();
             $table->enum('type', ['customer', 'merchant', 'courier', 'platform_escrow', 'platform_earnings']);
             $table->string('currency')->default('EGP');
             $table->decimal('balance');

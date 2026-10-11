@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('poduct_compatibilities', function (Blueprint $table) {
+        Schema::create('product_compatibilities', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnUpdate();
+            $table->foreignUuid('product_id')->constrained('products')->cascadeOnUpdate();
             $table->string('make');
             $table->string('model');
             $table->integer('year_from');
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('poduct_compatibilities');
+        Schema::dropIfExists('product_compatibilities');
     }
 };

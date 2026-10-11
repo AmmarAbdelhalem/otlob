@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('merchant_id')->constrained('merchants')->cascadeOnUpdate();
+            $table->foreignUuid('merchant_id')->constrained('merchants')->cascadeOnUpdate();
             $table->string('name');
             $table->string('sku');
             $table->string('oem_number');

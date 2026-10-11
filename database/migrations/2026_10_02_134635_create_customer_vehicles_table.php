@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('customer_vehicles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('make');
-            $table->string('mode');
+            $table->string('model');
             $table->integer('year');
             $table->char('vin', 17)->nullable(true);
             $table->boolean('is_default')->default(true);

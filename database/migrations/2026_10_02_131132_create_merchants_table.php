@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('merchants', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('store_name');
-            $table->integer('commercial_register_number')->unique();
+            $table->string('commercial_register_number')->unique();
             $table->string('address_text');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);

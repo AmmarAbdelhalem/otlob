@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('courier_profiles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->enum('vehicle_type', ['bike', 'car', 'van', 'truck']);
             $table->integer('max_load_capacity')->nullable();
             $table->integer('max_volume_capacity')->nullable();

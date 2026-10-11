@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ladger_entries', function (Blueprint $table) {
+        Schema::create('ledger_entries', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('transaction_id')->constrained('transactions')->cascadeOnDelete();
-            $table->foreignId('wallet_id')->constrained('wallets')->cascadeOnDelete();
+            $table->foreignUuid('transaction_id')->constrained('transactions')->cascadeOnDelete();
+            $table->foreignUuid('wallet_id')->constrained('wallets')->cascadeOnDelete();
             $table->enum('entry_type', ['debit', 'credit']);
             $table->decimal('amount');
             $table->decimal('running_balance');
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ladger_entries');
+        Schema::dropIfExists('ledger_entries');
     }
 };
