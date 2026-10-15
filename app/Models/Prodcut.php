@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Prodcut extends Model
+/**
+ * Backward compatibility alias for Product
+ */
+class Prodcut extends Product
 {
-    //
 }

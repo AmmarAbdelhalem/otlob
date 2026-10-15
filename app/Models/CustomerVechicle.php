@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class CustomerVechicle extends Model
+/**
+ * Backward compatibility alias for CustomerVehicle
+ */
+class CustomerVechicle extends CustomerVehicle
 {
-    //
 }

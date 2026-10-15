@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('role', ['admin', 'customer', 'merchant', 'courier']);
             $table->enum('status', ['active', 'pending', 'banned'])->default('active');
             $table->string('password');
+            $table->string('fcm_token')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
