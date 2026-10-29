@@ -28,7 +28,7 @@ class RemittanceService
     public function createRemittance(
         User|CourierProfile $courier,
         float $amount,
-        RemittanceMethod $method,
+        RemittanceMethod|string $method,
         ?string $receiptPath = null
     ): CourierRemittance {
         if ($amount <= 0) {
@@ -36,11 +36,12 @@ class RemittanceService
         }
 
         $courierUser = $courier instanceof CourierProfile ? $courier->user : $courier;
+        $remittanceMethod = $method instanceof RemittanceMethod ? $method : RemittanceMethod::from($method);
 
         return CourierRemittance::create([
             'courier_id' => $courierUser->id,
             'amount' => round($amount, 2),
-            'method' => $method,
+            'method' => $remittanceMethod,
             'status' => RemittanceStatus::PENDING,
             'proof_receipt_path' => $receiptPath,
         ]);

@@ -8,6 +8,8 @@ use App\Events\CourierLocationUpdatedEvent;
 use App\Events\OrderStatusUpdatedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Courier\CreateRemittanceRequest;
+use App\Http\Requests\Courier\PickupOrderRequest;
+use App\Http\Requests\Courier\ToggleStatusRequest;
 use App\Http\Requests\Courier\UpdateLocationRequest;
 use App\Http\Requests\Courier\VerifyOtpRequest;
 use App\Models\Order;
@@ -43,10 +45,7 @@ class CourierController extends Controller
         $courier = $request->user()->courierProfile;
 
         if (! $courier) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Courier profile not found.',
-            ], Response::HTTP_NOT_FOUND);
+            return $this->errorResponse('Courier profile not found.', Response::HTTP_NOT_FOUND);
         }
 
         $lat = (float) $request->input('latitude');
@@ -63,21 +62,19 @@ class CourierController extends Controller
             event(new CourierLocationUpdatedEvent($activeOrder->id, $courier->id, $lat, $lng));
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Coordinates updated.',
-        ]);
+        return $this->successResponse(null, 'Coordinates updated.');
     }
 
     /**
      * Toggle courier online/offline dispatch readiness state.
      */
-    public function toggleStatus(Request $request): JsonResponse
+    public function toggleStatus(ToggleStatusRequest $request): JsonResponse
     {
         $courier = $request->user()->courierProfile;
+        $validated = $request->validated();
 
-        $newState = $request->has('is_online')
-            ? (bool) $request->input('is_online')
+        $newState = array_key_exists('is_online', $validated)
+            ? (bool) $validated['is_online']
             : ! $courier->is_online;
 
         $courier->update(['is_online' => $newState]);
@@ -86,13 +83,10 @@ class CourierController extends Controller
             $this->trackingService->removeLocation($courier->id);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => $newState ? 'Courier is now online.' : 'Courier is now offline.',
-            'data' => [
-                'is_online' => $courier->is_online,
-            ],
-        ]);
+        return $this->successResponse(
+            ['is_online' => $courier->is_online],
+            $newState ? 'Courier is now online.' : 'Courier is now offline.'
+        );
     }
 
     /**
@@ -103,10 +97,7 @@ class CourierController extends Controller
         $courier = $request->user()->courierProfile;
 
         if (! $courier) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Courier profile not found.',
-            ], Response::HTTP_NOT_FOUND);
+            return $this->errorResponse('Courier profile not found.', Response::HTTP_NOT_FOUND);
         }
 
         // 1. Active delivery assigned to this courier (assigned_to_courier or in_transit)
@@ -124,12 +115,9 @@ class CourierController extends Controller
             ->latest()
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'active_order' => $activeOrder,
-                'available_offers' => $availableOffers,
-            ],
+        return $this->successResponse([
+            'active_order' => $activeOrder,
+            'available_offers' => $availableOffers,
         ]);
     }
 
@@ -145,25 +133,16 @@ class CourierController extends Controller
             $order = Order::lockForUpdate()->findOrFail($id);
 
             if ($order->courier_id !== null) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This order has already been accepted by another courier.',
-                ], Response::HTTP_CONFLICT);
+                return $this->errorResponse('This order has already been accepted by another courier.', Response::HTTP_CONFLICT);
             }
 
             if (! in_array($order->order_status, [OrderStatus::READY_FOR_PICKUP, OrderStatus::PENDING, OrderStatus::PREPARING])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order is not available for assignment.',
-                ], Response::HTTP_BAD_REQUEST);
+                return $this->errorResponse('Order is not available for assignment.', Response::HTTP_BAD_REQUEST);
             }
 
             // Enforce COD limit check
             if ($order->payment_type === PaymentType::COD && ! $courier->canAcceptCod((float) $order->total_amount)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot accept COD order: COD limit exceeded or account is suspended.',
-                ], Response::HTTP_FORBIDDEN);
+                return $this->errorResponse('Cannot accept COD order: COD limit exceeded or account is suspended.', Response::HTTP_FORBIDDEN);
             }
 
             $previousStatus = $order->order_status->value;
@@ -175,23 +154,23 @@ class CourierController extends Controller
 
             event(new OrderStatusUpdatedEvent($order, $previousStatus, OrderStatus::ASSIGNED_TO_COURIER->value));
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Order offer accepted.',
-                'data' => $order->load(['merchant', 'customer', 'items.product']),
-            ]);
+            return $this->successResponse(
+                $order->load(['merchant', 'customer', 'items.product']),
+                'Order offer accepted.'
+            );
         });
     }
 
     /**
      * Confirm pickup from merchant counter.
      */
-    public function pickupOrder(Request $request, string $id): JsonResponse
+    public function pickupOrder(PickupOrderRequest $request, string $id): JsonResponse
     {
         $courier = $request->user()->courierProfile;
         $order = Order::where('courier_id', $courier->id)->findOrFail($id);
 
-        $courierPaidCash = (bool) $request->input('courier_paid_merchant_cash', false);
+        $validated = $request->validated();
+        $courierPaidCash = (bool) ($validated['courier_paid_merchant_cash'] ?? false);
         $previousStatus = $order->order_status->value;
 
         $order->transitionTo(OrderStatus::IN_TRANSIT);
@@ -201,11 +180,10 @@ class CourierController extends Controller
 
         event(new OrderStatusUpdatedEvent($order, $previousStatus, OrderStatus::IN_TRANSIT->value));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Order picked up and is in transit.',
-            'data' => $order,
-        ]);
+        return $this->successResponse(
+            $order,
+            'Order picked up and is in transit.'
+        );
     }
 
     /**
@@ -224,10 +202,7 @@ class CourierController extends Controller
                 ->findOrFail($id);
 
             if (trim($order->delivery_otp) !== trim($inputOtp)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid delivery OTP. Please verify with the customer.',
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                return $this->errorResponse('Invalid delivery OTP. Please verify with the customer.', Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
             $previousStatus = $order->order_status->value;
@@ -248,11 +223,10 @@ class CourierController extends Controller
 
             event(new OrderStatusUpdatedEvent($order, $previousStatus, OrderStatus::DELIVERED->value));
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Delivery verified successfully and payment settled.',
-                'data' => $order->fresh(),
-            ]);
+            return $this->successResponse(
+                $order->fresh(),
+                'Delivery verified successfully and payment settled.'
+            );
         });
     }
 
@@ -269,18 +243,22 @@ class CourierController extends Controller
             $receiptPath = $request->file('proof_receipt')->store('remittances', 'public');
         }
 
+        $method = $validated['method'] instanceof \App\Enums\RemittanceMethod
+            ? $validated['method']
+            : \App\Enums\RemittanceMethod::from($validated['method']);
+
         $remittance = $this->remittanceService->createRemittance(
             $user,
             (float) $validated['amount'],
-            $validated['method'],
+            $method,
             $receiptPath
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Remittance receipt submitted for admin verification.',
-            'data' => $remittance,
-        ], Response::HTTP_CREATED);
+        return $this->successResponse(
+            $remittance,
+            'Remittance receipt submitted for admin verification.',
+            Response::HTTP_CREATED
+        );
     }
 
     /**
@@ -296,21 +274,18 @@ class CourierController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'wallet_id' => $wallet->id,
-                'balance' => (float) $wallet->balance,
-                'collected_cash_in_hand' => (float) $courier->collected_cash_in_hand,
-                'max_cod_limit' => (float) $courier->max_cod_limit,
-                'is_cod_suspended' => $courier->is_cod_suspended,
-                'currency' => $wallet->currency,
-                'statement' => $entries->items(),
-                'meta' => [
-                    'current_page' => $entries->currentPage(),
-                    'last_page' => $entries->lastPage(),
-                    'total' => $entries->total(),
-                ],
+        return $this->successResponse([
+            'wallet_id' => $wallet->id,
+            'balance' => (float) $wallet->balance,
+            'collected_cash_in_hand' => (float) $courier->collected_cash_in_hand,
+            'max_cod_limit' => (float) $courier->max_cod_limit,
+            'is_cod_suspended' => $courier->is_cod_suspended,
+            'currency' => $wallet->currency,
+            'statement' => $entries->items(),
+            'meta' => [
+                'current_page' => $entries->currentPage(),
+                'last_page' => $entries->lastPage(),
+                'total' => $entries->total(),
             ],
         ]);
     }

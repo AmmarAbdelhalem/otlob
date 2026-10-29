@@ -8,10 +8,10 @@ use App\Enums\WalletType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\UpdateFcmTokenRequest;
 use App\Models\CourierProfile;
 use App\Models\Merchant;
 use App\Models\User;
-use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,14 +29,19 @@ class AuthController extends Controller
         $role = $validated['role'] instanceof UserType ? $validated['role']->value : $validated['role'];
 
         return DB::transaction(function () use ($validated, $role) {
-            // 1. Create Base User
+            // 1. Create Base User with pending verification for merchants and couriers
+            $initialStatus = match ($role) {
+                UserType::MERCHANT->value, UserType::COURIER->value => UserStatus::PENDING,
+                default => UserStatus::ACTIVE,
+            };
+
             $user = User::create([
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'email' => $validated['email'] ?? null,
                 'password' => $validated['password'], // hashed via model cast
                 'role' => $role,
-                'status' => UserStatus::ACTIVE,
+                'status' => $initialStatus,
                 'fcm_token' => $validated['fcm_token'] ?? null,
             ]);
 
@@ -76,14 +81,10 @@ class AuthController extends Controller
             // 3. Issue Sanctum token with role ability
             $token = $user->createToken('auth-token', ['role:' . $role])->plainTextToken;
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful.',
-                'data' => [
-                    'user' => $user->load(['merchant', 'courierProfile', 'wallets']),
-                    'token' => $token,
-                ],
-            ], Response::HTTP_CREATED);
+            return $this->successResponse([
+                'user' => $user->load(['merchant', 'courierProfile', 'wallets']),
+                'token' => $token,
+            ], 'Registration successful.', Response::HTTP_CREATED);
         });
     }
 
@@ -97,34 +98,25 @@ class AuthController extends Controller
 
         $user = User::where('phone', $login)
             ->orWhere('email', $login)
+            ->orWhere('username', $login)
             ->first();
 
         if (! $user || ! Hash::check($password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials.',
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->errorResponse('Invalid credentials.', Response::HTTP_UNAUTHORIZED);
         }
 
         if ($user->status === UserStatus::SUSPENDED) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account has been suspended. Please contact support.',
-            ], Response::HTTP_FORBIDDEN);
+            return $this->errorResponse('Your account has been suspended. Please contact support.', Response::HTTP_FORBIDDEN);
         }
 
         $role = $user->role instanceof UserType ? $user->role->value : (string) $user->role;
         $deviceName = $request->input('device_name', 'mobile-app');
         $token = $user->createToken($deviceName, ['role:' . $role])->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful.',
-            'data' => [
-                'user' => $user->load(['merchant', 'courierProfile', 'wallets']),
-                'token' => $token,
-            ],
-        ]);
+        return $this->successResponse([
+            'user' => $user->load(['merchant', 'courierProfile', 'wallets']),
+            'token' => $token,
+        ], 'Login successful.');
     }
 
     /**
@@ -134,29 +126,21 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out successfully.',
-        ]);
+        return $this->successResponse(null, 'Logged out successfully.');
     }
 
     /**
      * Update device FCM push notification token.
      */
-    public function updateFcmToken(Request $request): JsonResponse
+    public function updateFcmToken(UpdateFcmTokenRequest $request): JsonResponse
     {
-        $request->validate([
-            'fcm_token' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $request->user()->update([
-            'fcm_token' => $request->input('fcm_token'),
+            'fcm_token' => $validated['fcm_token'],
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'FCM token updated successfully.',
-        ]);
+        return $this->successResponse(null, 'FCM token updated successfully.');
     }
 
     /**
@@ -164,9 +148,8 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => $request->user()->load(['merchant', 'courierProfile', 'vehicles', 'wallets']),
-        ]);
+        return $this->successResponse(
+            $request->user()->load(['merchant', 'courierProfile', 'vehicles', 'wallets'])
+        );
     }
 }

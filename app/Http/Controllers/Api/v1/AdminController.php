@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Enums\OrderStatus;
 use App\Enums\RemittanceStatus;
-use App\Enums\WalletType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\GetAdminOrdersRequest;
 use App\Models\CourierProfile;
 use App\Models\CourierRemittance;
+use App\Models\LedgerEntry;
 use App\Models\Merchant;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Transaction;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Services\RemittanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class AdminController extends Controller
 {
@@ -33,15 +37,7 @@ class AdminController extends Controller
             ->where('is_active', false)
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'data' => $merchants->items(),
-            'meta' => [
-                'current_page' => $merchants->currentPage(),
-                'last_page' => $merchants->lastPage(),
-                'total' => $merchants->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($merchants);
     }
 
     /**
@@ -52,32 +48,25 @@ class AdminController extends Controller
         $merchant = Merchant::findOrFail($id);
         $merchant->update(['is_active' => true]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Merchant store [{$merchant->store_name}] has been approved.",
-            'data' => $merchant,
-        ]);
+        return $this->successResponse(
+            $merchant,
+            "Merchant store [{$merchant->store_name}] has been approved."
+        );
     }
 
     /**
-     * List courier profiles awaiting approval.
+     * List courier profiles awaiting approval or suspended.
      */
     public function getPendingCouriers(Request $request): JsonResponse
     {
         $couriers = CourierProfile::with('user')
-            ->where('is_cod_suspended', true)
-            ->orWhereNull('max_load_capacity')
+            ->where(function ($query) {
+                $query->where('is_cod_suspended', true)
+                      ->orWhereNull('max_load_capacity');
+            })
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'data' => $couriers->items(),
-            'meta' => [
-                'current_page' => $couriers->currentPage(),
-                'last_page' => $couriers->lastPage(),
-                'total' => $couriers->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($couriers);
     }
 
     /**
@@ -88,22 +77,26 @@ class AdminController extends Controller
         $courier = CourierProfile::findOrFail($id);
         $courier->update([
             'is_cod_suspended' => false,
+            'max_load_capacity' => $courier->max_load_capacity ?? 20.0,
+            'max_volume_capacity' => $courier->max_volume_capacity ?? 0.1,
+            'max_cod_limit' => $courier->max_cod_limit ?? 2000.0,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Courier profile approved and active.',
-            'data' => $courier,
-        ]);
+        return $this->successResponse(
+            $courier,
+            'Courier profile approved and active.'
+        );
     }
 
     /**
      * Global oversight across all parent and sub-orders.
      */
-    public function getAllOrders(Request $request): JsonResponse
+    public function getAllOrders(GetAdminOrdersRequest $request): JsonResponse
     {
-        $status = $request->query('status');
-        $parentOnly = $request->boolean('parent_only', false);
+        $validated = $request->validated();
+        $status = $validated['status'] ?? null;
+        $parentOnly = (bool) ($validated['parent_only'] ?? false);
+        $perPage = min((int) ($validated['per_page'] ?? 20), 100);
 
         $query = Order::with(['customer', 'merchant', 'courier.user', 'subOrders']);
 
@@ -112,20 +105,12 @@ class AdminController extends Controller
         }
 
         if ($status) {
-            $query->where('order_status', $status);
+            $query->byStatus($status);
         }
 
-        $orders = $query->orderByDesc('created_at')->paginate(20);
+        $orders = $query->orderByDesc('created_at')->paginate($perPage);
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders->items(),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page' => $orders->lastPage(),
-                'total' => $orders->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($orders);
     }
 
     /**
@@ -138,15 +123,7 @@ class AdminController extends Controller
             ->latest()
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'data' => $remittances->items(),
-            'meta' => [
-                'current_page' => $remittances->currentPage(),
-                'last_page' => $remittances->lastPage(),
-                'total' => $remittances->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($remittances);
     }
 
     /**
@@ -158,11 +135,10 @@ class AdminController extends Controller
 
         $approved = $this->remittanceService->approveRemittance($remittance, $request->user());
 
-        return response()->json([
-            'success' => true,
-            'message' => "Remittance #{$approved->reference_number} approved and courier liability settled.",
-            'data' => $approved,
-        ]);
+        return $this->successResponse(
+            $approved,
+            "Remittance #{$approved->reference_number} approved and courier liability settled."
+        );
     }
 
     /**
@@ -173,25 +149,161 @@ class AdminController extends Controller
         $platformEarningsWallet = Wallet::platformEarnings();
         $platformEscrowWallet = Wallet::platformEscrow();
 
-        // Calculate service fee totals and order volume
+        // Calculate service fee totals and order volume using enum scope
         $deliveredOrders = Order::subOrdersOnly()
-            ->where('order_status', 'delivered');
+            ->byStatus(OrderStatus::DELIVERED);
 
         $totalDeliveredSubOrders = $deliveredOrders->count();
         $totalGrossVolume = (float) $deliveredOrders->sum('total_amount');
         $totalServiceFees = (float) $deliveredOrders->sum('service_fee');
         $totalDeliveryFeesPaid = (float) $deliveredOrders->sum('delivery_fee');
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'platform_earnings_balance' => (float) $platformEarningsWallet->balance,
-                'platform_escrow_balance' => (float) $platformEscrowWallet->balance,
-                'total_delivered_sub_orders' => $totalDeliveredSubOrders,
-                'total_gross_merchandise_value' => $totalGrossVolume,
-                'total_service_fee_revenue' => $totalServiceFees,
-                'total_courier_delivery_payouts' => $totalDeliveryFeesPaid,
+        return $this->successResponse([
+            'platform_earnings_balance' => (float) $platformEarningsWallet->balance,
+            'platform_escrow_balance' => (float) $platformEscrowWallet->balance,
+            'total_delivered_sub_orders' => $totalDeliveredSubOrders,
+            'total_gross_merchandise_value' => $totalGrossVolume,
+            'total_service_fee_revenue' => $totalServiceFees,
+            'total_courier_delivery_payouts' => $totalDeliveryFeesPaid,
+        ]);
+    }
+
+    /**
+     * Comprehensive dashboard overview metrics and statistics.
+     */
+    public function getDashboardStats(Request $request): JsonResponse
+    {
+        $platformEarningsWallet = Wallet::platformEarnings();
+        $platformEscrowWallet = Wallet::platformEscrow();
+
+        $totalUsers = User::count();
+        $totalCustomers = User::where('role', 'customer')->count();
+        $totalMerchants = Merchant::count();
+        $pendingMerchants = Merchant::where('is_active', false)->count();
+        $totalCouriers = CourierProfile::count();
+        $pendingCouriers = CourierProfile::where('is_cod_suspended', true)->count();
+
+        $totalOrders = Order::parentOnly()->count();
+        $ordersPending = Order::parentOnly()->where('order_status', OrderStatus::PENDING)->count();
+        $ordersInTransit = Order::parentOnly()->where('order_status', OrderStatus::IN_TRANSIT)->count();
+        $ordersDelivered = Order::parentOnly()->where('order_status', OrderStatus::DELIVERED)->count();
+
+        $totalProducts = Product::count();
+        $lowStockProducts = Product::where('stock_quantity', '<=', 5)->count();
+
+        $deliveredOrders = Order::subOrdersOnly()->where('order_status', OrderStatus::DELIVERED);
+        $totalRevenue = (float) $deliveredOrders->sum('total_amount');
+        $totalServiceFees = (float) $deliveredOrders->sum('service_fee');
+
+        return $this->successResponse([
+            'users' => [
+                'total' => $totalUsers,
+                'customers' => $totalCustomers,
+                'merchants' => $totalMerchants,
+                'pending_merchants' => $pendingMerchants,
+                'couriers' => $totalCouriers,
+                'pending_couriers' => $pendingCouriers,
+            ],
+            'orders' => [
+                'total' => $totalOrders,
+                'pending' => $ordersPending,
+                'in_transit' => $ordersInTransit,
+                'delivered' => $ordersDelivered,
+            ],
+            'inventory' => [
+                'total_products' => $totalProducts,
+                'low_stock_count' => $lowStockProducts,
+            ],
+            'financials' => [
+                'gross_volume' => $totalRevenue,
+                'service_revenue' => $totalServiceFees,
+                'platform_earnings' => (float) $platformEarningsWallet->balance,
+                'platform_escrow' => (float) $platformEscrowWallet->balance,
             ],
         ]);
+    }
+
+    /**
+     * User management: list and search system users.
+     */
+    public function getUsers(Request $request): JsonResponse
+    {
+        $query = User::query();
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->input('role'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $users = $query->latest()->paginate($request->input('per_page', 20));
+
+        return $this->paginatedResponse($users);
+    }
+
+    /**
+     * Inventory / Catalog oversight across all merchants.
+     */
+    public function getProducts(Request $request): JsonResponse
+    {
+        $query = Product::with(['merchant.user']);
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('oem_number', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('merchant_id')) {
+            $query->where('merchant_id', $request->input('merchant_id'));
+        }
+
+        if ($request->has('is_active') && $request->input('is_active') !== '') {
+            $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
+        }
+
+        $products = $query->latest()->paginate($request->input('per_page', 20));
+
+        return $this->paginatedResponse($products);
+    }
+
+    /**
+     * Toggle product active state.
+     */
+    public function toggleProductStatus(string $id): JsonResponse
+    {
+        $product = Product::findOrFail($id);
+        $product->update(['is_active' => !$product->is_active]);
+
+        return $this->successResponse(
+            $product,
+            $product->is_active ? 'Product is now active in catalog.' : 'Product deactivated from catalog.'
+        );
+    }
+
+    /**
+     * System activity logs: recent financial transactions and ledger audit entries.
+     */
+    public function getActivityLogs(Request $request): JsonResponse
+    {
+        $logs = LedgerEntry::with(['wallet.holder', 'order'])
+            ->latest()
+            ->paginate($request->input('per_page', 25));
+
+        return $this->paginatedResponse($logs);
     }
 }

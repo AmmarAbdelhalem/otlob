@@ -6,6 +6,7 @@ use App\Enums\PaymentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\AddVehicleRequest;
 use App\Http\Requests\Customer\CheckoutRequest;
+use App\Http\Requests\Customer\SearchProductsRequest;
 use App\Jobs\DispatchOrderToCouriersJob;
 use App\Jobs\SendSmsOtpJob;
 use App\Models\CustomerVehicle;
@@ -36,10 +37,7 @@ class CustomerController extends Controller
     {
         $vehicles = $request->user()->vehicles()->orderByDesc('is_default')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $vehicles,
-        ]);
+        return $this->successResponse($vehicles);
     }
 
     /**
@@ -56,32 +54,41 @@ class CustomerController extends Controller
 
         $vehicle = $user->vehicles()->create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Vehicle added to garage.',
-            'data' => $vehicle,
-        ], Response::HTTP_CREATED);
+        return $this->successResponse(
+            $vehicle,
+            'Vehicle added to garage.',
+            Response::HTTP_CREATED
+        );
     }
 
     /**
      * High-scale product search with Redis caching, vehicle fitment filters, OEM/SKU lookup, and pagination.
      */
-    public function searchProducts(Request $request): JsonResponse
+    public function searchProducts(SearchProductsRequest $request): JsonResponse
     {
-        $make = $request->query('make');
-        $model = $request->query('model');
-        $year = $request->query('year') ? (int) $request->query('year') : null;
-        $oem = $request->query('oem_number');
-        $sku = $request->query('sku');
-        $keyword = $request->query('q');
-        $page = (int) $request->query('page', 1);
-        $perPage = min((int) $request->query('per_page', 15), 50);
+        $validated = $request->validated();
+        $make = $validated['make'] ?? null;
+        $model = $validated['model'] ?? null;
+        $year = isset($validated['year']) && $validated['year'] > 0 ? (int) $validated['year'] : null;
+        $condition = $validated['condition'] ?? null;
+        $minPrice = isset($validated['min_price']) ? (float) $validated['min_price'] : null;
+        $maxPrice = isset($validated['max_price']) ? (float) $validated['max_price'] : null;
+        $sortBy = $validated['sort_by'] ?? 'popularity';
+        $oem = $validated['oem_number'] ?? null;
+        $sku = $validated['sku'] ?? null;
+        $keyword = $validated['q'] ?? null;
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = min((int) ($validated['per_page'] ?? 15), 50);
 
         // Build unique cache key for high-throughput scaling (+5M users)
         $cacheKey = 'products:search:' . md5(json_encode([
             'make' => $make,
             'model' => $model,
             'year' => $year,
+            'condition' => $condition,
+            'min_price' => $minPrice,
+            'max_price' => $maxPrice,
+            'sort_by' => $sortBy,
             'oem' => $oem,
             'sku' => $sku,
             'keyword' => $keyword,
@@ -89,10 +96,14 @@ class CustomerController extends Controller
             'per_page' => $perPage,
         ]));
 
-        $results = Cache::remember($cacheKey, now()->addMinutes(5), function () use (
+        $results = Cache::remember($cacheKey, now()->addMinutes(3), function () use (
             $make,
             $model,
             $year,
+            $condition,
+            $minPrice,
+            $maxPrice,
+            $sortBy,
             $oem,
             $sku,
             $keyword,
@@ -101,8 +112,22 @@ class CustomerController extends Controller
             $query = Product::with(['compatibilities', 'merchant'])
                 ->active();
 
-            if ($make && $model && $year) {
+            // Vehicle Fitment Search
+            if ($make || $model || $year) {
                 $query->compatibleWithVehicle($make, $model, $year);
+            }
+
+            // Part Condition Filter
+            if ($condition) {
+                $query->where('condition', $condition);
+            }
+
+            // Price Range Boundaries
+            if ($minPrice !== null) {
+                $query->where('price', '>=', $minPrice);
+            }
+            if ($maxPrice !== null) {
+                $query->where('price', '<=', $maxPrice);
             }
 
             if ($oem) {
@@ -122,19 +147,18 @@ class CustomerController extends Controller
                 });
             }
 
+            // Sorting
+            match ($sortBy) {
+                'price-asc' => $query->orderBy('price', 'asc'),
+                'price-desc' => $query->orderBy('price', 'desc'),
+                'newest' => $query->orderByDesc('created_at'),
+                default => $query->orderByDesc('stock_quantity'),
+            };
+
             return $query->paginate($perPage);
         });
 
-        return response()->json([
-            'success' => true,
-            'data' => $results->items(),
-            'meta' => [
-                'current_page' => $results->currentPage(),
-                'last_page' => $results->lastPage(),
-                'per_page' => $results->perPage(),
-                'total' => $results->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($results);
     }
 
     /**
@@ -159,11 +183,11 @@ class CustomerController extends Controller
             DispatchOrderToCouriersJob::dispatch($subOrder);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Order placed successfully.',
-            'data' => $order,
-        ], Response::HTTP_CREATED);
+        return $this->successResponse(
+            $order,
+            'Order placed successfully.',
+            Response::HTTP_CREATED
+        );
     }
 
     /**
@@ -177,15 +201,7 @@ class CustomerController extends Controller
             ->orderByDesc('created_at')
             ->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders->items(),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page' => $orders->lastPage(),
-                'total' => $orders->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($orders);
     }
 
     /**
@@ -198,10 +214,7 @@ class CustomerController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'data' => $order,
-        ]);
+        return $this->successResponse($order);
     }
 
     /**
@@ -237,26 +250,23 @@ class CustomerController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'order_code' => $order->order_code,
-                'status' => $order->order_status->value,
-                'status_label' => $order->order_status->label(),
-                'courier' => $order->courier ? [
-                    'name' => $order->courier->user->name,
-                    'phone' => $order->courier->user->phone,
-                    'vehicle_type' => $order->courier->vehicle_type->value,
-                    'live_position' => $liveCourierPosition,
-                ] : null,
-                'pickup_location' => [
-                    'latitude' => (float) ($order->merchant?->latitude ?? 0),
-                    'longitude' => (float) ($order->merchant?->longitude ?? 0),
-                ],
-                'delivery_location' => [
-                    'latitude' => (float) $order->delivery_lat,
-                    'longitude' => (float) $order->delivery_lng,
-                ],
+        return $this->successResponse([
+            'order_code' => $order->order_code,
+            'status' => $order->order_status->value,
+            'status_label' => $order->order_status->label(),
+            'courier' => $order->courier ? [
+                'name' => $order->courier->user->name,
+                'phone' => $order->courier->user->phone,
+                'vehicle_type' => $order->courier->vehicle_type->value,
+                'live_position' => $liveCourierPosition,
+            ] : null,
+            'pickup_location' => [
+                'latitude' => (float) ($order->merchant?->latitude ?? 0),
+                'longitude' => (float) ($order->merchant?->longitude ?? 0),
+            ],
+            'delivery_location' => [
+                'latitude' => (float) $order->delivery_lat,
+                'longitude' => (float) $order->delivery_lng,
             ],
         ]);
     }

@@ -13,13 +13,33 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn () => null);
+        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
+        $middleware->append(\App\Http\Middleware\SetLocaleMiddleware::class);
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->is('admin*')) {
+                return route('filament.admin.auth.login');
+            }
+            return null;
+        });
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, $request) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            $redirectTo = $e->redirectTo($request);
+            if ($redirectTo) {
+                return redirect()->guest($redirectTo);
+            }
+
+            if ($request->is('admin*')) {
+                return redirect()->guest(route('filament.admin.auth.login'));
+            }
+
+            return null;
         });
     })->create();

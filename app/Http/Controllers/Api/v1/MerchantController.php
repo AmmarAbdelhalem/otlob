@@ -6,9 +6,11 @@ use App\Enums\OrderStatus;
 use App\Events\OrderStatusUpdatedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\CreateProductRequest;
+use App\Http\Requests\Merchant\GetMerchantOrdersRequest;
 use App\Http\Requests\Merchant\UpdateOrderStatusRequest;
 use App\Http\Requests\Merchant\UpdateStockRequest;
 use App\Jobs\DispatchOrderToCouriersJob;
+use App\Models\Merchant;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +21,22 @@ use Symfony\Component\HttpFoundation\Response;
 class MerchantController extends Controller
 {
     /**
+     * Public directory of certified active merchants.
+     */
+    public function getPublicMerchants(Request $request): JsonResponse
+    {
+        $perPage = min((int) ($request->input('per_page', 12)), 50);
+
+        $merchants = Merchant::query()
+            ->where('is_active', true)
+            ->withCount('products')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return $this->paginatedResponse($merchants);
+    }
+
+    /**
      * Upload a new automotive part product with dimensions and vehicle compatibility mappings.
      */
     public function createProduct(CreateProductRequest $request): JsonResponse
@@ -26,10 +44,7 @@ class MerchantController extends Controller
         $merchant = $request->user()->merchant;
 
         if (! $merchant) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Merchant profile not found.',
-            ], Response::HTTP_NOT_FOUND);
+            return $this->errorResponse('Merchant profile not found.', Response::HTTP_NOT_FOUND);
         }
 
         $validated = $request->validated();
@@ -49,11 +64,11 @@ class MerchantController extends Controller
             return $prod->load('compatibilities');
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product published successfully.',
-            'data' => $product,
-        ], Response::HTTP_CREATED);
+        return $this->successResponse(
+            $product,
+            'Product published successfully.',
+            Response::HTTP_CREATED
+        );
     }
 
     /**
@@ -68,41 +83,29 @@ class MerchantController extends Controller
             'stock_quantity' => $request->input('stock_quantity'),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Stock updated successfully.',
-            'data' => $product,
-        ]);
+        return $this->successResponse($product, 'Stock updated successfully.');
     }
 
     /**
      * View store's incoming sub-orders with status filtering and pagination.
      */
-    public function getOrders(Request $request): JsonResponse
+    public function getOrders(GetMerchantOrdersRequest $request): JsonResponse
     {
         $merchant = $request->user()->merchant;
-        $status = $request->query('status');
-        $perPage = min((int) $request->query('per_page', 15), 50);
+        $validated = $request->validated();
+        $status = $validated['status'] ?? null;
+        $perPage = min((int) ($validated['per_page'] ?? 15), 50);
 
         $query = Order::with(['items.product', 'customer', 'courier.user'])
             ->where('merchant_id', $merchant->id);
 
         if ($status) {
-            $query->where('order_status', $status);
+            $query->byStatus($status);
         }
 
         $orders = $query->orderByDesc('created_at')->paginate($perPage);
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders->items(),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page' => $orders->lastPage(),
-                'per_page' => $orders->perPage(),
-                'total' => $orders->total(),
-            ],
-        ]);
+        return $this->paginatedResponse($orders);
     }
 
     /**
@@ -127,11 +130,10 @@ class MerchantController extends Controller
             DispatchOrderToCouriersJob::dispatch($order);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => "Order transitioned to {$newStatus->label()}.",
-            'data' => $order,
-        ]);
+        return $this->successResponse(
+            $order,
+            "Order transitioned to {$newStatus->label()}."
+        );
     }
 
     /**
@@ -147,18 +149,15 @@ class MerchantController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'wallet_id' => $wallet->id,
-                'balance' => (float) $wallet->balance,
-                'currency' => $wallet->currency,
-                'statement' => $entries->items(),
-                'meta' => [
-                    'current_page' => $entries->currentPage(),
-                    'last_page' => $entries->lastPage(),
-                    'total' => $entries->total(),
-                ],
+        return $this->successResponse([
+            'wallet_id' => $wallet->id,
+            'balance' => (float) $wallet->balance,
+            'currency' => $wallet->currency,
+            'statement' => $entries->items(),
+            'meta' => [
+                'current_page' => $entries->currentPage(),
+                'last_page' => $entries->lastPage(),
+                'total' => $entries->total(),
             ],
         ]);
     }

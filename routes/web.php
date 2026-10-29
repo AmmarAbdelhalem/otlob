@@ -1,28 +1,75 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// 1. Platform Hub & Unified Launchpad
-Route::get('/', function () {
-    return view('hub');
-})->name('hub');
+/*
+|--------------------------------------------------------------------------
+| Web / Health / Root Routes (Backend API Only)
+|--------------------------------------------------------------------------
+|
+| This project is a dedicated headless backend API for the Otlob Auto Parts
+| Marketplace. All client apps communicate via RESTful /api/v1 endpoints.
+| Interactive OpenAPI & Swagger UI is provided at /docs for developers.
+|
+*/
 
-// 2. Normal User / Customer Storefront & Garage App
-Route::get('/customer', function () {
-    return view('customer');
-})->name('portal.customer');
+Route::get('/', function (Request $request) {
+    if (! $request->wantsJson()) {
+        return redirect()->to('/admin');
+    }
 
-// 3. Merchant Store Manager & Fulfillment Portal
-Route::get('/merchant', function () {
-    return view('merchant');
-})->name('portal.merchant');
+    return response()->json([
+        'name' => 'Otlob Auto Parts Marketplace Backend API',
+        'version' => '1.0.0',
+        'status' => 'operational',
+        'admin_panel' => url('/admin'),
+        'admin_login' => url('/admin/login'),
+        'documentation_ui' => url('/docs'),
+        'endpoints' => [
+            'api_root' => url('/api/v1'),
+            'health_check' => url('/up'),
+            'openapi_spec' => url('/docs/openapi.json'),
+            'postman_collection' => url('/docs/otlob_postman_collection.json'),
+        ],
+    ]);
+})->name('api.index');
 
-// 4. Courier Delivery Fleet Web App
-Route::get('/courier', function () {
-    return view('courier');
-})->name('portal.courier');
+/*
+|--------------------------------------------------------------------------
+| Filament Admin & CMS Livewire Portal
+|--------------------------------------------------------------------------
+| The Full Admin & CMS Panel (Livewire 3 + Filament v3) is registered
+| dynamically by App\Providers\Filament\AdminPanelProvider at /admin.
+| Below routes provide convenient web aliases and redirects.
+*/
+Route::get('/admin-panel', function () {
+    return redirect()->to('/admin');
+})->name('admin.redirect');
 
-// 5. Admin Platform Operations & Financial Governance
-Route::get('/admin', function () {
-    return view('admin');
-})->name('portal.admin');
+// Interactive Swagger UI & OpenAPI Specification Routes
+Route::get('/docs', function (Request $request) {
+    if ($request->wantsJson() || $request->query('format') === 'json') {
+        return response()->file(public_path('docs/openapi.json'), [
+            'Content-Type' => 'application/json; charset=UTF-8',
+        ]);
+    }
+
+    return view('docs');
+})->name('api.docs');
+
+Route::get('/docs/openapi.json', function () {
+    return response()->file(public_path('docs/openapi.json'), [
+        'Content-Type' => 'application/json; charset=UTF-8',
+    ]);
+});
+
+Route::get('/docs/otlob_postman_collection.json', function () {
+    return response()->file(public_path('docs/otlob_postman_collection.json'), [
+        'Content-Type' => 'application/json; charset=UTF-8',
+    ]);
+});
+
+Route::get('/api/documentation', function () {
+    return redirect()->route('api.docs');
+});

@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Api\v1\AdminController;
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CartController;
+use App\Http\Controllers\Api\v1\CmsController;
 use App\Http\Controllers\Api\v1\CourierController;
 use App\Http\Controllers\Api\v1\CustomerController;
 use App\Http\Controllers\Api\v1\MerchantController;
+use App\Http\Controllers\Api\v1\OfferController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,9 +34,18 @@ Route::prefix('v1')->group(function () {
     });
 
     // ------------------------------------------------------------------------
-    // 2. Public Catalog Search
+    // 2. Public Catalog Search, Merchants, Offers & CMS Content
     // ------------------------------------------------------------------------
     Route::get('/products/search', [CustomerController::class, 'searchProducts'])->middleware('throttle:api');
+    Route::get('/merchants', [MerchantController::class, 'getPublicMerchants']);
+    Route::get('/offers', [OfferController::class, 'getPublicOffers']);
+    Route::post('/offers/validate', [OfferController::class, 'validateCoupon']);
+
+    Route::prefix('cms')->group(function () {
+        Route::get('/banners', [CmsController::class, 'getBanners']);
+        Route::get('/categories', [CmsController::class, 'getCategories']);
+        Route::get('/pages/{slug}', [CmsController::class, 'getPageBySlug']);
+    });
 
     // ------------------------------------------------------------------------
     // 3. Customer Module
@@ -41,6 +53,15 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'role:customer'])->prefix('customer')->group(function () {
         Route::get('/vehicles', [CustomerController::class, 'getVehicles']);
         Route::post('/vehicles', [CustomerController::class, 'addVehicle']);
+
+        // Database-backed Shopping Cart
+        Route::prefix('cart')->group(function () {
+            Route::get('/', [CartController::class, 'getCart']);
+            Route::post('/sync', [CartController::class, 'syncCart']);
+            Route::post('/items', [CartController::class, 'addItem']);
+            Route::delete('/items/{productId}', [CartController::class, 'removeItem']);
+            Route::delete('/', [CartController::class, 'clearCart']);
+        });
     });
 
     Route::middleware(['auth:sanctum', 'role:customer'])->prefix('orders')->group(function () {
@@ -79,6 +100,15 @@ Route::prefix('v1')->group(function () {
     // 6. Admin Module
     // ------------------------------------------------------------------------
     Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+        Route::get('/dashboard/stats', [AdminController::class, 'getDashboardStats']);
+        Route::get('/users', [AdminController::class, 'getUsers']);
+        Route::get('/products', [AdminController::class, 'getProducts']);
+        Route::patch('/products/{id}/toggle-status', [AdminController::class, 'toggleProductStatus']);
+        Route::get('/activity-logs', [AdminController::class, 'getActivityLogs']);
+
+        Route::apiResource('offers', OfferController::class);
+        Route::patch('/offers/{id}/toggle-status', [OfferController::class, 'toggleStatus']);
+
         Route::get('/merchants/pending', [AdminController::class, 'getPendingMerchants']);
         Route::patch('/merchants/{id}/approve', [AdminController::class, 'approveMerchant']);
         Route::get('/couriers/pending', [AdminController::class, 'getPendingCouriers']);
