@@ -3,10 +3,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Heart, ShoppingCart, User, Menu, ChevronDown, Check, ArrowRight, Store, Truck, LayoutDashboard, LogOut } from 'lucide-react';
+import {
+  Input,
+  Button,
+  Badge,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  DropdownSection,
+  Select,
+  SelectItem,
+  Spinner,
+} from '@heroui/react';
+import {
+  Search,
+  Heart,
+  ShoppingCart,
+  User,
+  Menu,
+  ChevronDown,
+  Store,
+  Truck,
+  LayoutDashboard,
+  LogOut,
+  Car,
+} from 'lucide-react';
 import { siteConfig } from '@/config/site.config';
-import { Locale, Product } from '@/lib/api/types';
-import { getMessages, formatMoney } from '@/lib/i18n';
+import { Locale, Product, Category } from '@/lib/api/types';
+import { getMessages, formatMoney, resolveLocalized } from '@/lib/i18n';
 import { useCartStore } from '@/stores/useCartStore';
 import { useWishlistStore } from '@/stores/useWishlistStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -23,19 +48,26 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
   const router = useRouter();
   const { cart } = useCartStore();
   const { items: wishlistItems } = useWishlistStore();
-  const { setMiniCartOpen, setMobileMenuOpen, isDarkMode } = useUIStore();
+  const { setMiniCartOpen, setMobileMenuOpen } = useUIStore();
   const { user, initializeAuth, logout } = useAuthStore();
 
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
+  const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    initializeAuth();
+    // Live dynamic fetch of categories from Filament CMS
+    services.catalog.getCategories().then((cats) => {
+      if (Array.isArray(cats)) {
+        setCategories(cats);
+      }
+    });
+  }, [initializeAuth]);
 
   // Live search debounce
   useEffect(() => {
@@ -46,9 +78,12 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const res = await services.search.liveSearch(searchQuery, 5);
-      setSuggestions(res.products);
-      setIsSearching(false);
+      try {
+        const res = await services.search.liveSearch(searchQuery, 5);
+        setSuggestions(res.products);
+      } finally {
+        setIsSearching(false);
+      }
     }, 250);
 
     return () => clearTimeout(timer);
@@ -65,8 +100,8 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
     setIsSearchFocused(false);
     router.push(
@@ -77,24 +112,27 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-surface border-b border-surface-border shadow-xs transition-colors">
-      <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 bg-black/85 backdrop-blur-md border-b border-[#262626] transition-colors">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Mobile menu trigger + Logo */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-lg text-text-muted hover:text-text hover:bg-surface-muted lg:hidden cursor-pointer"
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            onPress={() => setMobileMenuOpen(true)}
+            className="text-neutral-400 hover:text-white lg:hidden min-w-8 w-8 h-8"
             aria-label="Open navigation menu"
           >
-            <Menu className="w-6 h-6" />
-          </button>
+            <Menu className="w-5 h-5" />
+          </Button>
 
           <Link href={`/${locale}`} className="flex items-center gap-2 group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={isDarkMode ? '/images/logo-dark.svg' : '/images/logo-light.svg'}
+              src="/images/logo-dark.svg"
               alt={siteConfig.brand.name[locale]}
-              className="h-9 w-auto object-contain"
+              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
             />
           </Link>
         </div>
@@ -108,20 +146,23 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
         <div ref={searchContainerRef} className="flex-1 max-w-2xl relative hidden md:block">
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-center rounded-xl border-2 border-primary/20 focus-within:border-primary bg-surface transition-all overflow-hidden shadow-xs"
+            className="flex items-center rounded-xl border border-[#262626] bg-[#0a0a0a] focus-within:border-neutral-500 transition-all overflow-hidden"
           >
-            {/* Category Select */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="hidden xl:block bg-surface-muted text-xs font-semibold px-3 py-2.5 border-e border-surface-border outline-none text-text cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800"
-            >
-              <option value="">{t.common.allCategories}</option>
-              <option value="brakes">الفرامل (Brakes)</option>
-              <option value="engine">المحرك (Engine)</option>
-              <option value="suspension">العفشة (Suspension)</option>
-              <option value="electrical">الكهرباء (Electrical)</option>
-            </select>
+            {/* Category Select - Live CMS Powered */}
+            {categories.length > 0 && (
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="hidden xl:block bg-[#111111] text-[11px] font-medium px-3 py-2.5 border-e border-[#262626] outline-none text-neutral-300 cursor-pointer hover:bg-[#1a1a1a]"
+              >
+                <option value="">{t.common.allCategories}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.slug}>
+                    {resolveLocalized(cat.name, locale)}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <input
               type="text"
@@ -129,36 +170,41 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               placeholder={t.common.searchPlaceholder}
-              className="flex-1 px-4 py-2.5 text-xs text-text bg-transparent outline-none"
+              className="flex-1 px-4 py-2 text-xs text-white bg-transparent outline-none placeholder:text-neutral-500"
             />
 
-            <button
+            <Button
               type="submit"
-              className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
+              size="sm"
+              variant="flat"
+              className="rounded-none h-9 px-4 bg-white text-black hover:bg-neutral-200 font-bold text-xs"
               aria-label="Search"
             >
-              <Search className="w-4 h-4" />
-            </button>
+              {isSearching ? <Spinner size="sm" color="current" /> : <Search className="w-4 h-4" />}
+            </Button>
           </form>
 
           {/* Suggestions Dropdown Overlay */}
           {isSearchFocused && (searchQuery.length >= 2 || suggestions.length > 0) && (
-            <div className="absolute start-0 end-0 top-full mt-1.5 bg-surface rounded-xl shadow-2xl border border-surface-border overflow-hidden z-50">
+            <div className="absolute start-0 end-0 top-full mt-2 bg-[#0a0a0a] rounded-xl shadow-2xl border border-[#262626] overflow-hidden z-50">
               {isSearching ? (
-                <div className="p-4 text-center text-xs text-text-muted">{t.common.loading}</div>
+                <div className="p-4 text-center text-xs text-neutral-400 flex items-center justify-center gap-2">
+                  <Spinner size="sm" color="white" />
+                  <span>{t.common.loading}</span>
+                </div>
               ) : suggestions.length > 0 ? (
-                <div className="divide-y divide-surface-border">
-                  <div className="px-3 py-2 bg-surface-muted text-[11px] font-bold text-text-muted uppercase">
-                    نتائج مقترحة
+                <div className="divide-y divide-[#262626]">
+                  <div className="px-3 py-2 bg-[#111111] text-[10px] font-bold text-neutral-400 uppercase font-mono">
+                    {locale === 'ar' ? 'نتائج مقترحة من قاعدة البيانات' : 'Suggested Database Matches'}
                   </div>
                   {suggestions.map((item) => (
                     <Link
                       key={item.id}
                       href={`/${locale}/product/${item.sku}`}
                       onClick={() => setIsSearchFocused(false)}
-                      className="p-3 flex items-center gap-3 hover:bg-surface-muted transition-colors cursor-pointer"
+                      className="p-3 flex items-center gap-3 hover:bg-[#141414] transition-colors cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-[#171717] border border-[#262626] overflow-hidden shrink-0 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.thumbnail || '/images/products/brake-pads.svg'}
@@ -167,162 +213,192 @@ export const Header: React.FC<HeaderProps> = ({ locale }) => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-text truncate">{item.name}</p>
-                        <span className="text-[11px] font-mono text-text-muted">{item.sku}</span>
+                        <p className="text-xs font-semibold text-white truncate">{item.name}</p>
+                        <span className="text-[11px] font-mono text-neutral-400">SKU: {item.sku}</span>
                       </div>
-                      <span className="text-xs font-bold text-primary shrink-0">
+                      <span className="text-xs font-bold text-white font-mono shrink-0">
                         {formatMoney(item.price, locale)}
                       </span>
                     </Link>
                   ))}
                   <button
-                    onClick={handleSearchSubmit}
-                    className="w-full py-2.5 text-center text-xs font-bold text-primary hover:underline bg-surface-muted cursor-pointer"
+                    type="button"
+                    onClick={() => handleSearchSubmit()}
+                    className="w-full py-2.5 text-center text-xs font-semibold text-white hover:bg-[#141414] bg-[#0a0a0a] cursor-pointer transition-colors"
                   >
-                    عرض جميع النتائج لـ &ldquo;{searchQuery}&rdquo;
+                    {locale === 'ar' ? `عرض جميع النتائج لـ "${searchQuery}"` : `View all results for "${searchQuery}"`}
                   </button>
                 </div>
               ) : (
-                <div className="p-4 text-center text-xs text-text-muted">{t.common.empty}</div>
+                <div className="p-4 text-center text-xs text-neutral-400">{t.common.empty}</div>
               )}
             </div>
           )}
         </div>
 
-        {/* User Actions (Wishlist, Account, Cart) */}
-        <div className="flex items-center gap-3">
+        {/* User Actions (Wishlist, Account Dropdown, Cart) */}
+        <div className="flex items-center gap-2">
           {/* Wishlist */}
-          <Link
-            href={`/${locale}/wishlist`}
-            className="relative p-2 rounded-lg text-text-muted hover:text-text hover:bg-surface-muted transition-colors"
-            aria-label="Wishlist"
+          <Badge
+            content={wishlistItems.length}
+            isInvisible={wishlistItems.length === 0}
+            shape="circle"
+            color="primary"
+            size="sm"
+            classNames={{ badge: 'bg-white text-black font-bold text-[10px]' }}
           >
-            <Heart className="w-5 h-5" />
-            {wishlistItems.length > 0 && (
-              <span className="absolute top-1 end-1 w-4 h-4 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
-                {wishlistItems.length}
-              </span>
-            )}
-          </Link>
-
-          {/* Account & Role Switcher */}
-          {user ? (
-            <div className="relative group">
-              <button
-                className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-xl text-text hover:bg-surface-muted transition-colors cursor-pointer border border-border-color"
-                aria-label="User Menu"
-              >
-                <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  {user.name.trim().charAt(0)}
-                </div>
-                <div className="hidden xl:block text-start text-xs leading-tight min-w-0">
-                  <span className="font-bold text-text truncate block max-w-[100px]">{user.name.split(' ')[0]}</span>
-                  <span className="text-[10px] text-primary block font-medium capitalize">
-                    {user.role === 'merchant'
-                      ? 'تاجر معتمد'
-                      : user.role === 'courier'
-                      ? 'مندوب'
-                      : user.role === 'admin'
-                      ? 'مدير'
-                      : 'عميل'}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-text-muted hidden sm:block" />
-              </button>
-
-              {/* Dropdown Menu */}
-              <div className="absolute end-0 top-full mt-1.5 w-60 bg-surface rounded-2xl shadow-2xl border border-surface-border p-2 hidden group-hover:block group-focus-within:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                <div className="px-3 py-2 border-b border-surface-border mb-1">
-                  <span className="text-[10px] text-text-muted block">الحساب المسجل</span>
-                  <p className="text-xs font-bold text-text truncate">{user.name}</p>
-                  <p className="text-[11px] text-text-muted font-mono truncate">{user.phone || user.email}</p>
-                </div>
-
-                {/* Vendor Dashboard Switch */}
-                {user.role === 'merchant' && (
-                  <Link
-                    href={`/${locale}/vendor/dashboard`}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors my-1"
-                  >
-                    <Store className="w-4 h-4 shrink-0" />
-                    <span>لوحة تحكم المتجر (Vendor)</span>
-                  </Link>
-                )}
-
-                {/* Courier Dashboard Switch */}
-                {user.role === 'courier' && (
-                  <Link
-                    href={`/${locale}/courier/dashboard`}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 transition-colors my-1"
-                  >
-                    <Truck className="w-4 h-4 shrink-0" />
-                    <span>تطبيق المندوب (Courier)</span>
-                  </Link>
-                )}
-
-                {/* Backend Filament / Livewire Admin Portal */}
-                {user.role === 'admin' && (
-                  <a
-                    href={process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/admin` : 'http://localhost:8000/admin'}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-purple-600 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 transition-colors my-1"
-                  >
-                    <LayoutDashboard className="w-4 h-4 shrink-0" />
-                    <span>لوحة تحكم الإدارة (Filament CMS)</span>
-                  </a>
-                )}
-
-                <Link
-                  href={`/${locale}/account`}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-text hover:bg-surface-muted transition-colors"
-                >
-                  <User className="w-4 h-4 text-text-muted shrink-0" />
-                  <span>{locale === 'ar' ? 'حسابي وجراج السيارات' : 'Account & Garage'}</span>
-                </Link>
-
-                <div className="border-t border-surface-border mt-1 pt-1">
-                  <button
-                    onClick={() => logout()}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer text-start"
-                  >
-                    <LogOut className="w-4 h-4 shrink-0 rtl:rotate-180" />
-                    <span>{locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Link
-              href={`/${locale}/auth/login`}
-              className="flex items-center gap-2 p-2 rounded-lg text-text-muted hover:text-text hover:bg-surface-muted transition-colors"
-              aria-label="Sign In"
+            <Button
+              as={Link}
+              href={`/${locale}/wishlist`}
+              isIconOnly
+              variant="light"
+              size="sm"
+              className="text-neutral-400 hover:text-white rounded-xl min-w-9 w-9 h-9 border border-transparent hover:border-[#262626]"
+              aria-label="Wishlist"
             >
-              <User className="w-5 h-5" />
-              <div className="hidden xl:block text-start text-xs leading-tight">
-                <span className="text-text-muted block text-[10px]">{t.nav.account}</span>
-                <span className="font-bold text-text">{t.nav.login}</span>
-              </div>
-            </Link>
+              <Heart className="w-4 h-4" />
+            </Button>
+          </Badge>
+
+          {/* Account Dropdown */}
+          {user ? (
+            <Dropdown
+              placement="bottom-end"
+              classNames={{
+                content: 'bg-[#0a0a0a] border border-[#262626] text-neutral-200 min-w-56',
+              }}
+            >
+              <DropdownTrigger>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-neutral-200 hover:bg-[#141414] transition-colors cursor-pointer border border-[#262626]"
+                  aria-label="User Menu"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-white text-black flex items-center justify-center font-bold text-xs shrink-0">
+                    {user.name.trim().charAt(0)}
+                  </div>
+                  <div className="hidden xl:block text-start text-xs leading-tight min-w-0">
+                    <span className="font-bold text-white truncate block max-w-[90px]">
+                      {user.name.split(' ')[0]}
+                    </span>
+                    <span className="text-[10px] text-neutral-400 block font-mono capitalize">
+                      {user.role === 'merchant'
+                        ? 'تاجر معتمد'
+                        : user.role === 'courier'
+                        ? 'مندوب'
+                        : user.role === 'admin'
+                        ? 'مدير المنصة'
+                        : 'عميل'}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 hidden sm:block" />
+                </button>
+              </DropdownTrigger>
+
+              <DropdownMenu aria-label="User Actions" variant="flat">
+                <DropdownSection showDivider>
+                  <DropdownItem key="profile-header" isReadOnly className="opacity-100 cursor-default">
+                    <span className="text-[10px] text-neutral-400 block font-mono">
+                      {locale === 'ar' ? 'الحساب المسجل' : 'Signed in as'}
+                    </span>
+                    <p className="text-xs font-bold text-white truncate">{user.name}</p>
+                    <p className="text-[11px] text-neutral-400 font-mono truncate">{user.phone || user.email}</p>
+                  </DropdownItem>
+                </DropdownSection>
+
+                {user.role === 'merchant' ? (
+                  <DropdownItem
+                    key="vendor-dashboard"
+                    startContent={<Store className="w-4 h-4 text-white" />}
+                    as={Link}
+                    href={`/${locale}/vendor/dashboard`}
+                    className="text-white font-semibold"
+                  >
+                    {locale === 'ar' ? 'لوحة تحكم المتجر (Vendor)' : 'Vendor Dashboard'}
+                  </DropdownItem>
+                ) : null}
+
+                {user.role === 'courier' ? (
+                  <DropdownItem
+                    key="courier-dashboard"
+                    startContent={<Truck className="w-4 h-4 text-emerald-400" />}
+                    as={Link}
+                    href={`/${locale}/courier/dashboard`}
+                    className="text-emerald-400 font-semibold"
+                  >
+                    {locale === 'ar' ? 'تطبيق المندوب (Courier)' : 'Courier Dashboard'}
+                  </DropdownItem>
+                ) : null}
+
+                {user.role === 'admin' ? (
+                  <DropdownItem
+                    key="admin-filament"
+                    startContent={<LayoutDashboard className="w-4 h-4 text-purple-400" />}
+                    as="a"
+                    href={
+                      process.env.NEXT_PUBLIC_BACKEND_URL
+                        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/admin`
+                        : 'http://localhost:8000/admin'
+                    }
+                    className="text-purple-400 font-semibold"
+                  >
+                    {locale === 'ar' ? 'لوحة تحكم الإدارة (Filament)' : 'Filament CMS Admin'}
+                  </DropdownItem>
+                ) : null}
+
+                <DropdownItem
+                  key="account-garage"
+                  startContent={<Car className="w-4 h-4 text-neutral-400" />}
+                  as={Link}
+                  href={`/${locale}/account`}
+                  className="text-neutral-300"
+                >
+                  {locale === 'ar' ? 'حسابي وجراج السيارات' : 'Account & Garage'}
+                </DropdownItem>
+
+                <DropdownItem
+                  key="logout"
+                  color="danger"
+                  startContent={<LogOut className="w-4 h-4 rtl:rotate-180" />}
+                  onPress={() => logout()}
+                  className="text-rose-400"
+                >
+                  {locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          ) : (
+            <Button
+              as={Link}
+              href={`/${locale}/auth/login`}
+              variant="flat"
+              size="sm"
+              className="bg-[#111111] hover:bg-[#1a1a1a] text-neutral-200 border border-[#262626] text-xs font-semibold px-3"
+              startContent={<User className="w-4 h-4 text-neutral-400" />}
+            >
+              <span>{t.nav.login}</span>
+            </Button>
           )}
 
           {/* Cart Trigger */}
-          <button
-            onClick={() => setMiniCartOpen(true)}
-            className="flex items-center gap-2.5 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-2 rounded-xl transition-colors cursor-pointer group"
-            aria-label="Shopping Cart"
+          <Badge
+            content={cart.itemCount}
+            isInvisible={cart.itemCount === 0}
+            shape="circle"
+            color="primary"
+            size="sm"
+            classNames={{ badge: 'bg-white text-black font-bold text-[10px]' }}
           >
-            <div className="relative">
-              <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform" />
-              {cart.itemCount > 0 && (
-                <span className="absolute -top-1.5 -end-1.5 w-4 h-4 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
-                  {cart.itemCount}
-                </span>
-              )}
-            </div>
-            <div className="hidden sm:block text-start text-xs leading-tight">
-              <span className="text-text-muted block text-[10px]">{t.nav.cart}</span>
-              <span className="font-black text-text">{formatMoney(cart.totalAmount, locale)}</span>
-            </div>
-          </button>
+            <Button
+              onPress={() => setMiniCartOpen(true)}
+              variant="flat"
+              size="sm"
+              className="bg-[#111111] hover:bg-[#1a1a1a] text-white border border-[#262626] font-semibold text-xs px-3"
+              startContent={<ShoppingCart className="w-4 h-4" />}
+            >
+              <span className="hidden sm:inline font-mono">{formatMoney(cart.totalAmount, locale)}</span>
+            </Button>
+          </Badge>
         </div>
       </div>
     </header>

@@ -2,7 +2,19 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight, Store, Tag } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  Button,
+  Input,
+  Chip,
+  Divider,
+  ScrollShadow,
+} from '@heroui/react';
+import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, Store, Tag } from 'lucide-react';
 import { Locale } from '@/lib/api/types';
 import { getMessages, formatMoney } from '@/lib/i18n';
 import { useCartStore } from '@/stores/useCartStore';
@@ -15,13 +27,11 @@ interface MiniCartDrawerProps {
 export const MiniCartDrawer: React.FC<MiniCartDrawerProps> = ({ locale }) => {
   const t = getMessages(locale);
   const { isMiniCartOpen, setMiniCartOpen } = useUIStore();
-  const { cart, updateQuantity, removeItem, clearCart, applyCoupon, removeCoupon, couponCode } =
+  const { cart, updateQuantity, removeItem, applyCoupon, removeCoupon, couponCode } =
     useCartStore();
 
   const [couponInput, setCouponInput] = useState('');
   const [couponMsg, setCouponMsg] = useState<{ text: string; success: boolean } | null>(null);
-
-  if (!isMiniCartOpen) return null;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,204 +48,235 @@ export const MiniCartDrawer: React.FC<MiniCartDrawerProps> = ({ locale }) => {
     }
   };
 
+  const drawerPlacement = locale === 'ar' ? 'left' : 'right';
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
-      {/* Backdrop */}
-      <div
-        onClick={() => setMiniCartOpen(false)}
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-      />
-
-      <div className="absolute inset-y-0 end-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-surface border-s border-surface-border shadow-2xl flex flex-col justify-between animate-slideIn">
-          {/* Header */}
-          <div className="p-4 border-b border-surface-border flex items-center justify-between bg-surface-muted">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-bold text-text">{t.cart.title}</h2>
-              <span className="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
-                {cart.itemCount}
-              </span>
-            </div>
-            <button
-              onClick={() => setMiniCartOpen(false)}
-              className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Close cart"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {cart.items.length === 0 ? (
-              <div className="text-center py-16 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-text-muted">
-                  <ShoppingBag className="w-8 h-8 opacity-40" />
-                </div>
-                <p className="text-sm text-text-muted">{t.cart.empty}</p>
-                <button
-                  onClick={() => setMiniCartOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  {t.cart.continueShopping}
-                </button>
+    <Drawer
+      isOpen={isMiniCartOpen}
+      onOpenChange={(open) => setMiniCartOpen(open)}
+      placement={drawerPlacement}
+      size="md"
+      backdrop="blur"
+      classNames={{
+        backdrop: 'bg-black/80 backdrop-blur-sm',
+        base: 'bg-[#0a0a0a] border-x border-[#262626] text-[#ededed] shadow-2xl',
+        header: 'border-b border-[#262626] p-4 bg-[#0a0a0a]',
+        body: 'p-0 bg-[#000000]',
+        footer: 'border-t border-[#262626] p-4 bg-[#0a0a0a]',
+        closeButton: 'hover:bg-[#262626] text-neutral-400 hover:text-white',
+      }}
+    >
+      <DrawerContent>
+        {() => (
+          <>
+            <DrawerHeader className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-white" />
+                <h2 className="text-base font-bold text-white">{t.cart.title}</h2>
+                <Chip size="sm" variant="flat" className="bg-[#171717] text-white border border-[#262626] font-mono">
+                  {cart.itemCount}
+                </Chip>
               </div>
-            ) : (
-              /* Vendor Groups */
-              cart.vendorGroups.map((group) => (
-                <div
-                  key={group.merchantId}
-                  className="border border-surface-border rounded-xl p-3 bg-surface-muted space-y-3"
-                >
-                  <div className="flex items-center justify-between text-xs font-bold text-text border-b border-surface-border pb-2">
-                    <div className="flex items-center gap-1.5 text-primary">
-                      <Store className="w-4 h-4" />
-                      <span>{group.merchantName}</span>
+            </DrawerHeader>
+
+            <DrawerBody>
+              <ScrollShadow className="w-full h-full p-4 space-y-4">
+                {cart.items.length === 0 ? (
+                  <div className="text-center py-20 space-y-4">
+                    <div className="w-16 h-16 rounded-2xl bg-[#111111] border border-[#262626] flex items-center justify-center mx-auto text-neutral-500">
+                      <ShoppingBag className="w-8 h-8 opacity-40" />
                     </div>
-                    <span className="text-text-muted font-normal text-[11px]">
-                      {t.cart.deliveryFee} {formatMoney(group.estimatedDeliveryFee, locale)}
-                    </span>
+                    <p className="text-sm text-neutral-400">{t.cart.empty}</p>
+                    <Button
+                      onPress={() => setMiniCartOpen(false)}
+                      variant="flat"
+                      className="bg-[#171717] text-white hover:bg-[#262626] border border-[#262626] text-xs font-semibold"
+                    >
+                      {t.cart.continueShopping}
+                    </Button>
                   </div>
-
-                  <div className="space-y-3">
-                    {group.items.map((item) => (
-                      <div key={item.id} className="flex gap-3 bg-surface p-2.5 rounded-lg border border-surface-border">
-                        <div className="w-14 h-14 rounded-md bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center overflow-hidden border border-surface-border">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.product.thumbnail || '/images/products/brake-pads.svg'}
-                            alt={item.product.name}
-                            className="w-full h-full object-cover"
-                          />
+                ) : (
+                  cart.vendorGroups.map((group) => (
+                    <div
+                      key={group.merchantId}
+                      className="border border-[#262626] rounded-xl p-3 bg-[#0a0a0a] space-y-3"
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-white border-b border-[#262626] pb-2">
+                        <div className="flex items-center gap-1.5 text-neutral-200">
+                          <Store className="w-4 h-4 text-neutral-400" />
+                          <span>{group.merchantName}</span>
                         </div>
+                        <span className="text-neutral-500 font-normal text-[11px] font-mono">
+                          {t.cart.deliveryFee} {formatMoney(group.estimatedDeliveryFee, locale)}
+                        </span>
+                      </div>
 
-                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-                          <div>
-                            <h4 className="text-xs font-bold text-text truncate">
-                              {item.product.name}
-                            </h4>
-                            <span className="text-[11px] text-text-muted block font-mono">
-                              {item.product.sku}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs font-black text-primary">
-                              {formatMoney(item.totalPrice, locale)}
-                            </span>
-
-                            {/* Quantity Controls */}
-                            <div className="flex items-center border border-surface-border rounded-md bg-surface">
-                              <button
-                                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-text transition-colors cursor-pointer"
-                                aria-label="Decrease quantity"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="px-2 text-xs font-bold text-text">{item.quantity}</span>
-                              <button
-                                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-text transition-colors cursor-pointer"
-                                aria-label="Increase quantity"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
+                      <div className="space-y-2.5">
+                        {group.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex gap-3 bg-[#111111] p-2.5 rounded-lg border border-[#262626]"
+                          >
+                            <div className="w-14 h-14 rounded-md bg-[#171717] shrink-0 flex items-center justify-center overflow-hidden border border-[#262626]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={item.product.thumbnail || '/images/products/brake-pads.svg'}
+                                alt={item.product.name}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
 
-                            <button
-                              onClick={() => removeItem(item.productId)}
-                              className="text-text-muted hover:text-danger p-1 transition-colors cursor-pointer"
-                              aria-label="Remove item"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-between">
+                              <div>
+                                <h4 className="text-xs font-bold text-white truncate">
+                                  {item.product.name}
+                                </h4>
+                                <span className="text-[11px] text-neutral-400 block font-mono">
+                                  {item.product.sku}
+                                </span>
+                              </div>
 
-          {/* Footer Totals & Checkout */}
-          {cart.items.length > 0 && (
-            <div className="p-4 border-t border-surface-border bg-surface space-y-3">
-              {/* Coupon Row */}
-              <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag className="w-3.5 h-3.5 absolute start-2.5 top-3 text-text-muted" />
-                  <input
-                    type="text"
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-xs font-black text-white font-mono">
+                                  {formatMoney(item.totalPrice, locale)}
+                                </span>
+
+                                {/* Quantity Controls */}
+                                <div className="flex items-center border border-[#262626] rounded-md bg-[#0a0a0a]">
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="light"
+                                    onPress={() => updateQuantity(item.productId, item.quantity - 1)}
+                                    className="w-7 h-7 min-w-7 text-neutral-300 hover:text-white"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </Button>
+                                  <span className="px-1 text-xs font-bold text-white min-w-6 text-center font-mono">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="light"
+                                    onPress={() => updateQuantity(item.productId, item.quantity + 1)}
+                                    className="w-7 h-7 min-w-7 text-neutral-300 hover:text-white"
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
+
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() => removeItem(item.productId)}
+                                  className="w-7 h-7 min-w-7 text-neutral-500 hover:text-rose-400"
+                                  aria-label="Remove item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </ScrollShadow>
+            </DrawerBody>
+
+            {cart.items.length > 0 && (
+              <DrawerFooter className="flex flex-col gap-3">
+                {/* Coupon Input */}
+                <form onSubmit={handleApplyCoupon} className="flex gap-2 w-full">
+                  <Input
+                    size="sm"
+                    variant="bordered"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder={t.cart.couponPlaceholder}
-                    className="w-full text-xs ps-8 pe-3 py-2 rounded-lg bg-surface-muted border border-surface-border text-text uppercase outline-none focus:border-primary"
+                    startContent={<Tag className="w-3.5 h-3.5 text-neutral-400" />}
+                    classNames={{
+                      inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-700',
+                      input: 'text-xs uppercase font-mono',
+                    }}
                   />
-                </div>
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded-lg bg-secondary hover:bg-secondary-hover text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  {t.cart.applyCoupon}
-                </button>
-              </form>
-              {couponMsg && (
-                <p className={`text-xs ${couponMsg.success ? 'text-success' : 'text-danger'}`}>
-                  {couponMsg.text}
-                </p>
-              )}
-              {couponCode && (
-                <div className="flex items-center justify-between text-xs bg-success/10 text-success px-2 py-1 rounded">
-                  <span>كود الخصم: {couponCode}</span>
-                  <button onClick={removeCoupon} className="text-xs font-bold hover:underline cursor-pointer">
-                    إلغاء
-                  </button>
-                </div>
-              )}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="flat"
+                    className="bg-[#171717] hover:bg-[#262626] text-white border border-[#262626] text-xs font-semibold px-4"
+                  >
+                    {t.cart.applyCoupon}
+                  </Button>
+                </form>
 
-              {/* Price Breakdown */}
-              <div className="space-y-1.5 text-xs text-text-muted pt-2 border-t border-surface-border">
-                <div className="flex justify-between">
-                  <span>{t.cart.subtotal}</span>
-                  <span className="font-semibold text-text">{formatMoney(cart.subtotal, locale)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t.cart.deliveryFee}</span>
-                  <span className="font-semibold text-text">{formatMoney(cart.totalDeliveryFee, locale)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{t.cart.serviceFee}</span>
-                  <span className="font-semibold text-text">{formatMoney(cart.platformServiceFee, locale)}</span>
-                </div>
-                {cart.discountAmount > 0 && (
-                  <div className="flex justify-between text-success font-semibold">
-                    <span>الخصم المطبق</span>
-                    <span>- {formatMoney(cart.discountAmount, locale)}</span>
+                {couponMsg && (
+                  <p className={`text-xs ${couponMsg.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {couponMsg.text}
+                  </p>
+                )}
+
+                {couponCode && (
+                  <div className="flex items-center justify-between text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg w-full">
+                    <span>{locale === 'ar' ? 'كود الخصم المطبق:' : 'Coupon Code:'} <strong className="font-mono">{couponCode}</strong></span>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="text-xs font-bold hover:underline cursor-pointer"
+                    >
+                      {locale === 'ar' ? 'إلغاء' : 'Remove'}
+                    </button>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-black text-text pt-2 border-t border-surface-border">
-                  <span>{t.cart.total}</span>
-                  <span className="text-primary">{formatMoney(cart.totalAmount, locale)}</span>
-                </div>
-              </div>
 
-              {/* Checkout CTA */}
-              <Link
-                href={`/${locale}/checkout`}
-                onClick={() => setMiniCartOpen(false)}
-                className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>{t.cart.checkout}</span>
-                <ArrowRight className="w-4 h-4 rtl-mirror" />
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                <Divider className="bg-[#262626]" />
+
+                {/* Price Breakdown */}
+                <div className="w-full space-y-1.5 text-xs text-neutral-400">
+                  <div className="flex justify-between">
+                    <span>{t.cart.subtotal}</span>
+                    <span className="font-semibold text-white font-mono">{formatMoney(cart.subtotal, locale)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t.cart.deliveryFee}</span>
+                    <span className="font-semibold text-white font-mono">{formatMoney(cart.totalDeliveryFee, locale)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t.cart.serviceFee}</span>
+                    <span className="font-semibold text-white font-mono">{formatMoney(cart.platformServiceFee, locale)}</span>
+                  </div>
+                  {cart.discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-semibold">
+                      <span>{locale === 'ar' ? 'الخصم المطبق' : 'Discount Applied'}</span>
+                      <span className="font-mono">- {formatMoney(cart.discountAmount, locale)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-black text-white pt-2 border-t border-[#262626]">
+                    <span>{t.cart.total}</span>
+                    <span className="text-white font-mono">{formatMoney(cart.totalAmount, locale)}</span>
+                  </div>
+                </div>
+
+                {/* Checkout CTA */}
+                <Button
+                  as={Link}
+                  href={`/${locale}/checkout`}
+                  onPress={() => setMiniCartOpen(false)}
+                  className="w-full bg-white text-black font-bold text-sm hover:bg-neutral-200 transition-colors py-6 shadow-sm"
+                  endContent={<ArrowRight className="w-4 h-4 rtl-mirror" />}
+                >
+                  {t.cart.checkout}
+                </Button>
+              </DrawerFooter>
+            )}
+          </>
+        )}
+      </DrawerContent>
+    </Drawer>
   );
 };
