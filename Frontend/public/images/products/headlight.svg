@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" fill="none">
+  <rect width="300" height="200" rx="12" fill="#f1f5f9"/>
+  <path d="M60 110C60 70 120 50 240 60c-20 60-60 80-180 50z" fill="#0ea5e9" opacity="0.3"/>
+  <path d="M70 105C70 75 120 60 220 70c-15 50-50 65-150 35z" fill="#ffffff" stroke="#0284c7" stroke-width="3"/>
+  <circle cx="120" cy="85" r="16" fill="#0284c7"/>
+  <circle cx="120" cy="85" r="8" fill="#e0f2fe"/>
+  <text x="150" y="175" text-anchor="middle" font-family="'Cairo', sans-serif" font-weight="700" font-size="14" fill="#64748b">فوانيس وإضاءة أصلية</text>
+</svg>

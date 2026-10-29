@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" fill="none">
+  <rect width="300" height="200" rx="12" fill="#f1f5f9"/>
+  <rect x="135" y="30" width="30" height="60" rx="4" fill="#94a3b8"/>
+  <rect x="130" y="90" width="40" height="70" rx="6" fill="#e11d48"/>
+  <circle cx="150" cy="25" r="10" stroke="#64748b" stroke-width="4" fill="none"/>
+  <circle cx="150" cy="170" r="10" stroke="#64748b" stroke-width="4" fill="none"/>
+  <text x="150" y="190" text-anchor="middle" font-family="'Cairo', sans-serif" font-weight="700" font-size="14" fill="#64748b">مساعدين غاز ياباني</text>
+</svg>

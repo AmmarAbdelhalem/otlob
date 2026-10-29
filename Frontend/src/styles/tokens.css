@@ -1,0 +1,199 @@
+/* ==========================================================================
+   OTLOB AUTO-PARTS MARKETPLACE — DESIGN TOKENS
+   Strict CSS-variable architecture supporting presets, RTL/LTR & Dark Mode
+   ========================================================================== */
+
+:root {
+  /* Color Tokens - Default Preset (Automotive Racing Amber & Deep Slate) */
+  --color-primary: #e53e3e;
+  --color-primary-hover: #c53030;
+  --color-primary-active: #9b2c2c;
+  --color-primary-foreground: #ffffff;
+  --color-primary-light: #fff5f5;
+
+  --color-secondary: #0f172a;
+  --color-secondary-hover: #1e293b;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #f59e0b;
+  --color-accent-hover: #d97706;
+  --color-accent-foreground: #ffffff;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-border: #e2e8f0;
+
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-inverted: #ffffff;
+
+  --color-success: #10b981;
+  --color-success-foreground: #ffffff;
+
+  --color-danger: #ef4444;
+  --color-danger-foreground: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+
+  /* Radius Tokens */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-base: var(--radius-md);
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.06), 0 1px 4px -1px rgb(0 0 0 / 0.04);
+  --shadow-drawer: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-arabic: 'Cairo', 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ==========================================================================
+   Dark Mode Tokens
+   ========================================================================== */
+[data-theme="dark"],
+.dark {
+  --color-primary: #f87171;
+  --color-primary-hover: #ef4444;
+  --color-primary-active: #dc2626;
+  --color-primary-foreground: #0f172a;
+  --color-primary-light: rgba(248, 113, 113, 0.12);
+
+  --color-secondary: #f8fafc;
+  --color-secondary-hover: #e2e8f0;
+  --color-secondary-foreground: #0f172a;
+
+  --color-accent: #fbbf24;
+  --color-accent-hover: #f59e0b;
+  --color-accent-foreground: #0f172a;
+
+  --color-surface: #0f172a;
+  --color-surface-muted: #1e293b;
+  --color-surface-card: #1e293b;
+  --color-surface-border: #334155;
+
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-text-inverted: #0f172a;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6);
+  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.4);
+}
+
+/* ==========================================================================
+   Theme Preset: Electric Blue
+   ========================================================================== */
+[data-preset="electric-blue"],
+[data-theme="electric-blue"] {
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-primary-active: #075985;
+  --color-primary-foreground: #ffffff;
+  --color-primary-light: #f0f9ff;
+  --color-accent: #38bdf8;
+}
+
+/* ==========================================================================
+   Theme Preset: British Racing Green (Emerald Speed)
+   ========================================================================== */
+[data-preset="emerald-speed"],
+[data-theme="emerald-speed"] {
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-active: #065f46;
+  --color-primary-foreground: #ffffff;
+  --color-primary-light: #ecfdf5;
+  --color-accent: #10b981;
+}
+
+/* ==========================================================================
+   Theme Preset: Monochrome Luxe (Obsidian & Platinum)
+   ========================================================================== */
+[data-preset="monochrome-luxe"],
+[data-theme="monochrome-luxe"] {
+  --color-primary: #18181b;
+  --color-primary-hover: #27272a;
+  --color-primary-active: #09090b;
+  --color-primary-foreground: #ffffff;
+  --color-primary-light: #f4f4f5;
+  --color-accent: #71717a;
+}
+
+[data-theme="dark"][data-preset="monochrome-luxe"],
+.dark[data-preset="monochrome-luxe"] {
+  --color-primary: #f4f4f5;
+  --color-primary-hover: #e4e4e7;
+  --color-primary-active: #ffffff;
+  --color-primary-foreground: #18181b;
+  --color-primary-light: rgba(244, 244, 245, 0.12);
+  --color-accent: #a1a1aa;
+}
+
+/* ==========================================================================
+   Border Radius Presets
+   ========================================================================== */
+[data-radius="none"] {
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-base: 0px;
+}
+
+[data-radius="sm"] {
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-base: var(--radius-sm);
+}
+
+[data-radius="md"] {
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-base: var(--radius-md);
+}
+
+[data-radius="lg"] {
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-base: var(--radius-lg);
+}
+
+[data-radius="full"] {
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-base: 9999px;
+}
+
+/* ==========================================================================
+   Global Reset & Logical Layout Rules
+   ========================================================================== */
+html {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[dir="rtl"] {
+  font-family: var(--font-arabic);
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-muted);
+}

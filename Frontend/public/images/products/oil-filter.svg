@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" fill="none">
+  <rect width="300" height="200" rx="12" fill="#f1f5f9"/>
+  <rect x="90" y="45" width="120" height="110" rx="20" fill="#1e293b"/>
+  <path d="M100 45h100v15H100z" fill="#0284c7"/>
+  <circle cx="150" cy="52" r="4" fill="#ffffff"/>
+  <text x="150" y="110" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="16" fill="#38bdf8">OIL FILTER</text>
+  <text x="150" y="175" text-anchor="middle" font-family="'Cairo', sans-serif" font-weight="700" font-size="14" fill="#64748b">فلتر زيت محرك أصلي</text>
+</svg>
