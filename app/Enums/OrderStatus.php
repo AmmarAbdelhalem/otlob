@@ -2,7 +2,11 @@
 
 namespace App\Enums;
 
-enum OrderStatus: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+
+enum OrderStatus: string implements HasLabel, HasColor, HasIcon
 {
     case PENDING = 'pending';
     case ACCEPTED_BY_MERCHANT = 'accepted_by_merchant';
@@ -78,6 +82,39 @@ enum OrderStatus: string
             self::IN_TRANSIT           => 'In Transit',
             self::DELIVERED            => 'Delivered',
             self::CANCELLED            => 'Cancelled',
+        };
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string | array | null
+    {
+        return match ($this) {
+            self::PENDING              => 'gray',
+            self::ACCEPTED_BY_MERCHANT => 'info',
+            self::PREPARING            => 'warning',
+            self::READY_FOR_PICKUP     => 'info',
+            self::ASSIGNED_TO_COURIER  => 'primary',
+            self::IN_TRANSIT           => 'primary',
+            self::DELIVERED            => 'success',
+            self::CANCELLED            => 'danger',
+        };
+    }
+
+    public function getIcon(): ?string
+    {
+        return match ($this) {
+            self::PENDING              => 'heroicon-m-clock',
+            self::ACCEPTED_BY_MERCHANT => 'heroicon-m-check-circle',
+            self::PREPARING            => 'heroicon-m-arrow-path',
+            self::READY_FOR_PICKUP     => 'heroicon-m-archive-box',
+            self::ASSIGNED_TO_COURIER  => 'heroicon-m-user-plus',
+            self::IN_TRANSIT           => 'heroicon-m-truck',
+            self::DELIVERED            => 'heroicon-m-check-badge',
+            self::CANCELLED            => 'heroicon-m-x-circle',
         };
     }
 }
