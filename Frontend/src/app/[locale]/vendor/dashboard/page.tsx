@@ -1,26 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Box,
-  Typography,
-  Grid,
   Card,
-  CardContent,
+  CardBody,
   Chip,
   Button,
-  Stack,
-  Divider,
-  Paper,
   Table,
+  TableHeader,
+  TableColumn,
   TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
-  Avatar,
-} from '@mui/material';
+  TableCell,
+} from '@heroui/react';
 import {
   TrendingUp,
   ShoppingBag,
@@ -28,7 +21,6 @@ import {
   Clock,
   Truck,
   Plus,
-  CheckCircle2,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -51,6 +43,34 @@ export default function VendorDashboardPage() {
 
   const [orders, setOrders] = useState<VendorSubOrder[]>([]);
 
+  // Fetch real merchant orders from backend
+  useEffect(() => {
+    async function fetchMerchantOrders() {
+      try {
+        const res = await fetch('/api/v1/merchant/orders');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && Array.isArray(json.data)) {
+            const mapped: VendorSubOrder[] = json.data.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.order_code,
+              customerName: o.customer?.name || (isAr ? 'العميل' : 'Customer'),
+              vehicle: o.customer?.vehicles?.[0] ? `${o.customer.vehicles[0].make} ${o.customer.vehicles[0].model}` : (isAr ? 'سيارة العميل' : 'Vehicle'),
+              itemsCount: o.items?.length || 1,
+              totalAmount: Number(o.total_amount || 0),
+              status: o.order_status === 'preparing' ? 'preparing' : o.order_status === 'ready_for_pickup' ? 'ready_for_pickup' : o.order_status === 'delivered' ? 'delivered' : 'pending',
+              createdAt: o.created_at ? new Date(o.created_at).toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '',
+            }));
+            setOrders(mapped);
+          }
+        }
+      } catch {
+        // Fallback to empty state
+      }
+    }
+    fetchMerchantOrders();
+  }, [isAr]);
+
   const updateOrderStatus = (id: string, newStatus: VendorSubOrder['status']) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
@@ -59,7 +79,7 @@ export default function VendorDashboardPage() {
 
   const statusMap: Record<
     VendorSubOrder['status'],
-    { label: string; color: 'warning' | 'info' | 'secondary' | 'success' }
+    { label: string; color: 'warning' | 'primary' | 'secondary' | 'success' }
   > = {
     pending: {
       label: isAr ? 'جديد بانتظار التجهيز' : 'New Order',
@@ -67,7 +87,7 @@ export default function VendorDashboardPage() {
     },
     preparing: {
       label: isAr ? 'جاري تجهيز القطع' : 'Preparing Parts',
-      color: 'info',
+      color: 'primary',
     },
     ready_for_pickup: {
       label: isAr ? 'جاهز للمندوب' : 'Ready for Courier',
@@ -80,234 +100,235 @@ export default function VendorDashboardPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <div className="space-y-6">
       {/* Title & Action Bar */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2.5, sm: 3 },
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          justifyContent: 'space-between',
-          gap: 2,
-          border: '1px solid #E2E8F0',
-          borderRadius: '16px',
-          bgcolor: '#FFFFFF',
-        }}
-      >
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>
+      <div className="p-6 rounded-2xl bg-neutral-950 border border-neutral-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
             {isAr ? 'لوحة أداء المبيعات والتوريد' : 'Vendor Operations & Sales'}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
             {isAr
               ? `أهلاً بك في متجر ${user?.name || 'التاجر المعتمد'}. تابع طلبياتك ومخزونك في الوقت الفعلي.`
               : `Welcome to ${user?.name || 'Merchant'}. Track your parts orders and inventory live.`}
-          </Typography>
-        </Box>
+          </p>
+        </div>
 
         <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Plus size={18} />}
-          sx={{ fontWeight: 700, borderRadius: '12px', px: 2.5, py: 1.25 }}
+          className="bg-white text-black font-bold text-xs"
+          startContent={<Plus className="w-4 h-4" />}
         >
           {isAr ? 'إضافة قطعة غيار للمخزن' : 'Add Auto Part'}
         </Button>
-      </Paper>
+      </div>
 
       {/* KPI Cards Grid */}
-      <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card elevation={0} sx={{ height: '100%', border: '1px solid #E2E8F0', borderRadius: '16px', bgcolor: '#FFFFFF' }}>
-            <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.8125rem' }}>
-                  {isAr ? 'مبيعات الأسبوع' : 'Weekly Revenue'}
-                </Typography>
-                <Avatar sx={{ bgcolor: 'rgba(16,185,129,0.1)', color: 'success.main', width: 38, height: 38 }}>
-                  <TrendingUp size={20} color="#10B981" />
-                </Avatar>
-              </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', fontFamily: 'monospace', mb: 1 }}>
-                0 ج.م
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-neutral-950 border border-neutral-800">
+          <CardBody className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-400">
+                {isAr ? 'مبيعات الأسبوع' : 'Weekly Revenue'}
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <span className="text-2xl font-black font-mono text-white block">
+                0 {isAr ? 'ج.م' : 'EGP'}
+              </span>
+              <span className="text-[11px] text-neutral-500">
                 {isAr ? 'لا توجد مبيعات مسجلة بعد' : 'No sales recorded yet'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+              </span>
+            </div>
+          </CardBody>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card elevation={0} sx={{ height: '100%', border: '1px solid #E2E8F0', borderRadius: '16px', bgcolor: '#FFFFFF' }}>
-            <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.8125rem' }}>
-                  {isAr ? 'طلبات قيد المتابعة' : 'Active Orders'}
-                </Typography>
-                <Avatar sx={{ bgcolor: 'rgba(37,99,235,0.1)', color: 'primary.main', width: 38, height: 38 }}>
-                  <ShoppingBag size={20} color="#2563EB" />
-                </Avatar>
-              </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', fontFamily: 'monospace', mb: 1 }}>
+        <Card className="bg-neutral-950 border border-neutral-800">
+          <CardBody className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-400">
+                {isAr ? 'طلبات قيد المتابعة' : 'Active Orders'}
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <span className="text-2xl font-black font-mono text-white block">
                 {orders.length} {isAr ? 'طلبات' : 'Orders'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+              </span>
+              <span className="text-[11px] text-neutral-500">
                 {orders.filter((o) => o.status === 'pending').length} {isAr ? 'بانتظار بدء التجهيز' : 'pending dispatch'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+              </span>
+            </div>
+          </CardBody>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card elevation={0} sx={{ height: '100%', border: '1px solid #E2E8F0', borderRadius: '16px', bgcolor: '#FFFFFF' }}>
-            <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.8125rem' }}>
-                  {isAr ? 'القطع المعروضة بالمخزن' : 'Active Stock SKUs'}
-                </Typography>
-                <Avatar sx={{ bgcolor: 'rgba(99,102,241,0.1)', color: 'info.main', width: 38, height: 38 }}>
-                  <Package size={20} color="#6366F1" />
-                </Avatar>
-              </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', fontFamily: 'monospace', mb: 1 }}>
+        <Card className="bg-neutral-950 border border-neutral-800">
+          <CardBody className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-400">
+                {isAr ? 'القطع المعروضة بالمخزن' : 'Active Stock SKUs'}
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <Package className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <span className="text-2xl font-black font-mono text-white block">
                 0 {isAr ? 'قطعة' : 'Parts'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+              </span>
+              <span className="text-[11px] text-neutral-500">
                 {isAr ? 'جميع القطع موثقة برقم OEM' : 'Catalog parts indexed by OEM'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+              </span>
+            </div>
+          </CardBody>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card elevation={0} sx={{ height: '100%', border: '1px solid #E2E8F0', borderRadius: '16px', bgcolor: '#FFFFFF' }}>
-            <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.8125rem' }}>
-                  {isAr ? 'متوسط سرعة التجهيز' : 'Avg. Dispatch Speed'}
-                </Typography>
-                <Avatar sx={{ bgcolor: 'rgba(124,58,237,0.1)', color: 'secondary.main', width: 38, height: 38 }}>
-                  <Clock size={20} color="#7C3AED" />
-                </Avatar>
-              </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 900, color: '#0F172A', fontFamily: 'monospace', mb: 1 }}>
-                -
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+        <Card className="bg-neutral-950 border border-neutral-800">
+          <CardBody className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-neutral-400">
+                {isAr ? 'متوسط سرعة التجهيز' : 'Avg. Dispatch Speed'}
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <span className="text-2xl font-black font-mono text-white block">-</span>
+              <span className="text-[11px] text-neutral-500">
                 {isAr ? 'في انتظار أول إرسالية' : 'Awaiting first order'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
 
       {/* Live Orders Section */}
-      <Paper elevation={0} sx={{ p: 3, border: '1px solid #E2E8F0', borderRadius: '16px', bgcolor: '#FFFFFF' }}>
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', pb: 2, mb: 2, borderBottom: '1px solid #F1F5F9' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <ShoppingBag size={18} color="#2563EB" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0F172A' }}>
-              {isAr ? 'طابور الطلبات الواردة للفرع' : 'Incoming Branch Orders'}
-            </Typography>
-          </Stack>
-          <Chip label={isAr ? 'تحديث تلقائي حي' : 'Live Sync'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-        </Stack>
+      <Card className="bg-neutral-950 border border-neutral-800">
+        <CardBody className="p-6 space-y-4">
+          <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-neutral-300" />
+              <h2 className="text-base font-bold text-white">
+                {isAr ? 'طابور الطلبات الواردة للفرع' : 'Incoming Branch Orders'}
+              </h2>
+            </div>
+            <Chip size="sm" variant="flat" className="font-bold text-[10px] bg-neutral-900 text-neutral-300">
+              {isAr ? 'تحديث تلقائي حي' : 'Live Sync'}
+            </Chip>
+          </div>
 
-        {orders.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Avatar sx={{ bgcolor: 'rgba(37,99,235,0.08)', color: 'primary.main', width: 56, height: 56, mx: 'auto', mb: 2 }}>
-              <ShoppingBag size={28} color="#2563EB" />
-            </Avatar>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1E293B' }}>
-              {isAr ? 'لا توجد طلبات واردة حالياً' : 'No incoming orders right now'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 400, mx: 'auto', mt: 0.5 }}>
-              {isAr
-                ? 'ستظهر هنا طلبات العملاء فور إسنادها لفرعكم لبدء التجهيز والتسليم لمندوب الشحن.'
-                : 'Customer orders assigned to your branch will appear here in real time.'}
-            </Typography>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontWeight: 700 }}>{isAr ? 'رقم الطلب' : 'Order'}</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>{isAr ? 'العميل / السيارة' : 'Customer / Car'}</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>{isAr ? 'القطع' : 'Items'}</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>{isAr ? 'القيمة' : 'Amount'}</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>{isAr ? 'الحالة' : 'Status'}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>{isAr ? 'الإجراءات' : 'Actions'}</TableCell>
-                </TableRow>
-              </TableHead>
+          {orders.length === 0 ? (
+            <div className="py-12 text-center space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-neutral-900 text-neutral-400 flex items-center justify-center mx-auto">
+                <ShoppingBag className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-bold text-white">
+                {isAr ? 'لا توجد طلبات واردة حالياً' : 'No incoming orders right now'}
+              </h3>
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                {isAr
+                  ? 'ستظهر هنا طلبات العملاء فور إسنادها لفرعكم لبدء التجهيز والتسليم لمندوب الشحن.'
+                  : 'Customer orders assigned to your branch will appear here in real time.'}
+              </p>
+            </div>
+          ) : (
+            <Table
+              aria-label="Vendor Orders Table"
+              classNames={{
+                wrapper: 'bg-transparent shadow-none p-0',
+                th: 'bg-neutral-900 text-neutral-400 font-bold text-xs border-b border-neutral-800',
+                td: 'text-neutral-200 text-xs border-b border-neutral-850 py-3',
+              }}
+            >
+              <TableHeader>
+                <TableColumn>{isAr ? 'رقم الطلب' : 'Order'}</TableColumn>
+                <TableColumn>{isAr ? 'العميل / السيارة' : 'Customer / Car'}</TableColumn>
+                <TableColumn>{isAr ? 'القطع' : 'Items'}</TableColumn>
+                <TableColumn>{isAr ? 'القيمة' : 'Amount'}</TableColumn>
+                <TableColumn>{isAr ? 'الحالة' : 'Status'}</TableColumn>
+                <TableColumn align="end">{isAr ? 'الإجراءات' : 'Actions'}</TableColumn>
+              </TableHeader>
               <TableBody>
                 {orders.map((ord) => {
                   const badge = statusMap[ord.status];
                   return (
-                    <TableRow key={ord.id} hover>
-                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
-                        {ord.orderNumber}
-                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                    <TableRow key={ord.id}>
+                      <TableCell>
+                        <span className="font-mono font-bold text-white block">
+                          {ord.orderNumber}
+                        </span>
+                        <span className="text-[10px] text-neutral-500 block">
                           {ord.createdAt}
-                        </Typography>
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{ord.customerName}</Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{ord.vehicle}</Typography>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>{ord.itemsCount} {isAr ? 'قطع' : 'pcs'}</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                        {ord.totalAmount.toLocaleString()} ج.م
+                        <span className="font-bold text-white block">{ord.customerName}</span>
+                        <span className="text-[10px] text-neutral-400">{ord.vehicle}</span>
                       </TableCell>
                       <TableCell>
-                        <Chip label={badge.label} color={badge.color} size="small" sx={{ fontWeight: 700 }} />
+                        <span className="font-bold">{ord.itemsCount} {isAr ? 'قطع' : 'pcs'}</span>
                       </TableCell>
-                      <TableCell align="right">
-                        {ord.status === 'pending' && (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            size="small"
-                            onClick={() => updateOrderStatus(ord.id, 'preparing')}
-                            sx={{ fontWeight: 700 }}
-                          >
-                            {isAr ? 'بدء التجهيز' : 'Start Preparation'}
-                          </Button>
-                        )}
-                        {ord.status === 'preparing' && (
-                          <Button
-                            variant="contained"
-                            color="secondary"
-                            size="small"
-                            startIcon={<Truck size={16} />}
-                            onClick={() => updateOrderStatus(ord.id, 'ready_for_pickup')}
-                            sx={{ fontWeight: 700 }}
-                          >
-                            {isAr ? 'جاهز للمندوب' : 'Ready'}
-                          </Button>
-                        )}
-                        {ord.status === 'ready_for_pickup' && (
-                          <Chip
-                            icon={<Clock size={14} />}
-                            label={isAr ? 'في انتظار المندوب' : 'Awaiting Courier'}
-                            color="secondary"
-                            variant="outlined"
-                            size="small"
-                            sx={{ fontWeight: 700 }}
-                          />
-                        )}
+                      <TableCell>
+                        <span className="font-mono font-bold text-emerald-400">
+                          {ord.totalAmount.toLocaleString()} {isAr ? 'ج.م' : 'EGP'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color={badge.color}
+                          className="font-bold text-[10px]"
+                        >
+                          {badge.label}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          {ord.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              className="bg-white text-black font-bold text-xs"
+                              onClick={() => updateOrderStatus(ord.id, 'preparing')}
+                            >
+                              {isAr ? 'بدء التجهيز' : 'Start Preparation'}
+                            </Button>
+                          )}
+                          {ord.status === 'preparing' && (
+                            <Button
+                              size="sm"
+                              className="bg-emerald-500 text-black font-bold text-xs"
+                              startContent={<Truck className="w-3.5 h-3.5" />}
+                              onClick={() => updateOrderStatus(ord.id, 'ready_for_pickup')}
+                            >
+                              {isAr ? 'جاهز للمندوب' : 'Ready'}
+                            </Button>
+                          )}
+                          {ord.status === 'ready_for_pickup' && (
+                            <Chip
+                              startContent={<Clock className="w-3 h-3" />}
+                              size="sm"
+                              variant="flat"
+                              className="font-bold text-[10px] bg-neutral-900 text-neutral-400"
+                            >
+                              {isAr ? 'في انتظار المندوب' : 'Awaiting Courier'}
+                            </Chip>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
-          </TableContainer>
-        )}
-      </Paper>
-    </Box>
+          )}
+        </CardBody>
+      </Card>
+    </div>
   );
 }

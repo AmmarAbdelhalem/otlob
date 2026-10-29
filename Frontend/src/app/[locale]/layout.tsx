@@ -46,7 +46,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   if (isDashboardRoute) {
     return (
-      <html lang={locale} dir={dir} data-theme="system" data-preset="default">
+      <html lang={locale} dir={dir} data-theme="dark" className="dark">
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -56,7 +56,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             rel="stylesheet"
           />
         </head>
-        <body className="min-h-screen bg-bg-secondary/30 text-text selection:bg-primary selection:text-white">
+        <body className="min-h-screen bg-black text-text selection:bg-white selection:text-black">
           <HeroProvider>
             <main className="min-h-screen">{children}</main>
             <ThemeCustomizerDrawer locale={locale} />
@@ -67,7 +67,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   }
 
   return (
-    <html lang={locale} dir={dir} data-theme="system" data-preset="default">
+    <html lang={locale} dir={dir} data-theme="dark" className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -77,7 +77,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen flex flex-col bg-surface-muted text-text selection:bg-primary selection:text-white">
+      <body className="min-h-screen flex flex-col bg-black text-text selection:bg-white selection:text-black">
         <HeroProvider>
           <TopBar locale={locale} />
           <Header locale={locale} />

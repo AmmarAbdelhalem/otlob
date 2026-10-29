@@ -11,6 +11,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Vercel-inspired dark palette
+        vercel: {
+          bg: '#000000',
+          card: '#0a0a0a',
+          cardHover: '#111111',
+          surface: '#171717',
+          border: '#262626',
+          borderHover: '#404040',
+          text: '#ededed',
+          muted: '#888888',
+          accent: '#0070f3',
+        },
         primary: {
           DEFAULT: 'var(--color-primary)',
           hover: 'var(--color-primary-hover)',
@@ -65,7 +77,59 @@ const config: Config = {
       },
     },
   },
-  plugins: [heroui(), typography()],
+  plugins: [
+    heroui({
+      prefix: 'heroui',
+      defaultTheme: 'dark',
+      defaultExtendTheme: 'dark',
+      layout: {
+        radius: {
+          small: '6px',
+          medium: '10px',
+          large: '14px',
+        },
+      },
+      themes: {
+        dark: {
+          colors: {
+            background: '#000000',
+            foreground: '#ededed',
+            primary: {
+              DEFAULT: '#ffffff',
+              foreground: '#000000',
+            },
+            secondary: {
+              DEFAULT: '#171717',
+              foreground: '#ededed',
+            },
+            focus: '#ffffff',
+            content1: '#0a0a0a',
+            content2: '#111111',
+            content3: '#171717',
+            content4: '#262626',
+          },
+        },
+        light: {
+          colors: {
+            background: '#ffffff',
+            foreground: '#000000',
+            primary: {
+              DEFAULT: '#000000',
+              foreground: '#ffffff',
+            },
+            secondary: {
+              DEFAULT: '#f5f5f5',
+              foreground: '#171717',
+            },
+            content1: '#fafafa',
+            content2: '#f5f5f5',
+            content3: '#e5e5e5',
+          },
+        },
+      },
+    }),
+    typography(),
+  ],
 };
 
 export default config;

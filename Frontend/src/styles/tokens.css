@@ -56,37 +56,37 @@
 }
 
 /* ==========================================================================
-   Dark Mode Tokens
+   Dark Mode Tokens (Vercel-inspired Minimalist Dark Palette)
    ========================================================================== */
 [data-theme="dark"],
 .dark {
-  --color-primary: #f87171;
-  --color-primary-hover: #ef4444;
-  --color-primary-active: #dc2626;
-  --color-primary-foreground: #0f172a;
-  --color-primary-light: rgba(248, 113, 113, 0.12);
+  --color-primary: #ffffff;
+  --color-primary-hover: #e5e5e5;
+  --color-primary-active: #d4d4d4;
+  --color-primary-foreground: #000000;
+  --color-primary-light: rgba(255, 255, 255, 0.08);
 
-  --color-secondary: #f8fafc;
-  --color-secondary-hover: #e2e8f0;
-  --color-secondary-foreground: #0f172a;
+  --color-secondary: #171717;
+  --color-secondary-hover: #262626;
+  --color-secondary-foreground: #ffffff;
 
-  --color-accent: #fbbf24;
-  --color-accent-hover: #f59e0b;
-  --color-accent-foreground: #0f172a;
+  --color-accent: #0070f3;
+  --color-accent-hover: #0060df;
+  --color-accent-foreground: #ffffff;
 
-  --color-surface: #0f172a;
-  --color-surface-muted: #1e293b;
-  --color-surface-card: #1e293b;
-  --color-surface-border: #334155;
+  --color-surface: #0a0a0a;
+  --color-surface-muted: #000000;
+  --color-surface-card: #0a0a0a;
+  --color-surface-border: #262626;
 
-  --color-text: #f8fafc;
-  --color-text-muted: #94a3b8;
-  --color-text-inverted: #0f172a;
+  --color-text: #ededed;
+  --color-text-muted: #888888;
+  --color-text-inverted: #000000;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6);
-  --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.8);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.8);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.9);
+  --shadow-card: 0 0 0 1px #262626, 0 2px 8px -2px rgb(0 0 0 / 0.8);
 }
 
 /* ==========================================================================

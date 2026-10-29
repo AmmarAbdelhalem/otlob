@@ -3,28 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Avatar,
-  IconButton,
-  Button,
-  Divider,
-  Paper,
-  Stack,
-  CircularProgress,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
+import { Avatar, Chip, Button, Switch } from '@heroui/react';
 import {
   Truck,
   Wallet,
@@ -36,15 +15,15 @@ import {
   ExternalLink,
   Navigation,
   Circle,
+  Loader2,
 } from 'lucide-react';
-import MuiProvider from '@/components/theme/MuiProvider';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 interface CourierLayoutProps {
   children: React.ReactNode;
 }
 
-function CourierLayoutInner({ children }: CourierLayoutProps) {
+export default function CourierDashboardLayout({ children }: CourierLayoutProps) {
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -64,25 +43,25 @@ function CourierLayoutInner({ children }: CourierLayoutProps) {
   const navLinks = [
     {
       href: `/${locale}/courier/dashboard`,
-      icon: <Truck size={18} />,
+      icon: <Truck className="w-4 h-4" />,
       labelAr: 'مهام التوصيل الحالية',
       labelEn: 'Active Missions',
     },
     {
       href: `/${locale}/courier/wallet`,
-      icon: <Wallet size={18} />,
+      icon: <Wallet className="w-4 h-4" />,
       labelAr: 'العهدة النقدية والتحصيلات',
       labelEn: 'COD Wallet & Limit',
     },
     {
       href: `/${locale}/courier/history`,
-      icon: <CheckCircle2 size={18} />,
+      icon: <CheckCircle2 className="w-4 h-4" />,
       labelAr: 'سجل الطلبات المسلمة',
       labelEn: 'Delivered History',
     },
     {
       href: `/${locale}/courier/settings`,
-      icon: <Car size={18} />,
+      icon: <Car className="w-4 h-4" />,
       labelAr: 'المركبة والمستندات',
       labelEn: 'Vehicle & Documents',
     },
@@ -90,266 +69,157 @@ function CourierLayoutInner({ children }: CourierLayoutProps) {
 
   if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress color="success" />
-      </Box>
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
     );
   }
 
   const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
-      <Box sx={{ px: 1, py: 1.5 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {isAr ? 'قائمة المندوب' : 'Courier Menu'}
-        </Typography>
-      </Box>
+    <div className="flex flex-col h-full p-4 justify-between bg-neutral-950 border-e border-neutral-800">
+      <div className="space-y-4">
+        <div className="px-2 py-1">
+          <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+            {isAr ? 'قائمة المندوب' : 'Courier Menu'}
+          </span>
+        </div>
 
-      <List sx={{ flex: 1, p: 0 }}>
-        {navLinks.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <ListItem key={item.href} disablePadding sx={{ mb: 0.75 }}>
-              <ListItemButton
-                component={Link}
+        <nav className="space-y-1">
+          {navLinks.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                sx={{
-                  borderRadius: '12px',
-                  py: 1.25,
-                  px: 1.75,
-                  bgcolor: active ? 'rgba(16,185,129,0.08)' : 'transparent',
-                  color: active ? 'success.dark' : 'text.primary',
-                  fontWeight: active ? 700 : 500,
-                  border: active ? '1px solid rgba(16,185,129,0.2)' : '1px solid transparent',
-                  '&:hover': {
-                    bgcolor: active ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.04)',
-                  },
-                }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  active
+                    ? 'bg-neutral-800 text-white border border-neutral-700 shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900 border border-transparent'
+                }`}
               >
-                <ListItemIcon sx={{ minWidth: 36, color: active ? 'success.main' : 'text.secondary' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <Typography sx={{ flex: 1, fontSize: '0.8125rem', fontWeight: active ? 700 : 500 }}>
-                  {isAr ? item.labelAr : item.labelEn}
-                </Typography>
-                {active && (
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'success.main' }} />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+                <span className={active ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
+                <span className="flex-1">{isAr ? item.labelAr : item.labelEn}</span>
+                {active && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: '#F8FAFC', borderColor: '#E2E8F0', borderRadius: '16px' }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-          <Navigation size={16} color="#10B981" />
-          <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.primary' }}>
+      <div className="p-3.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs font-bold text-neutral-200">
             {isAr ? 'نظام الملاحة GPS متصل' : 'GPS Tracking Active'}
-          </Typography>
-        </Stack>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.7rem' }}>
+          </span>
+        </div>
+        <p className="text-[11px] text-neutral-400 leading-relaxed">
           {isAr
             ? 'يتم بث إحداثيات موقعك للعميل وغرفة العمليات لضمان أسرع وقت استلام.'
             : 'Your live position is broadcasted for ETA and route optimization.'}
-        </Typography>
-      </Paper>
-    </Box>
+        </p>
+      </div>
+    </div>
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Material UI AppBar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: '#FFFFFF',
-          borderBottom: '1px solid #E2E8F0',
-          color: 'text.primary',
-        }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 }, minHeight: 64 }}>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              sx={{ display: { md: 'none' } }}
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </IconButton>
+    <div className="flex min-h-screen bg-black text-neutral-100">
+      {/* Top Navbar */}
+      <header className="fixed top-0 inset-x-0 h-16 z-40 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 px-4 sm:px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
 
-            <Box
-              component={Link}
-              href={`/${locale}/courier/dashboard`}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
+          <Link href={`/${locale}/courier/dashboard`}>
+            <div className="flex items-center gap-3">
               <Avatar
-                sx={{
-                  bgcolor: 'success.main',
-                  width: 40,
-                  height: 40,
-                  boxShadow: '0 4px 10px rgba(16,185,129,0.25)',
-                }}
-              >
-                <Truck size={20} />
-              </Avatar>
-              <Box>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.2, color: '#0F172A' }}>
-                    {user?.name || (isAr ? 'كابتن أطلب' : 'Otlob Courier')}
-                  </Typography>
-                  <Chip
-                    label={isAr ? 'مندوب معتمد' : 'Verified'}
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                  />
-                </Stack>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.65rem', fontFamily: 'monospace' }}>
-                  {isAr ? 'إدارة الشحن اللوجستي والتسليم' : 'Fleet & Dispatch Center'}
-                </Typography>
-              </Box>
-            </Box>
-          </Stack>
-
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-            {/* Shift Switch */}
-            <Paper
-              variant="outlined"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 1.5,
-                py: 0.25,
-                borderRadius: '50px',
-                bgcolor: '#F8FAFC',
-              }}
-            >
-              <Circle size={8} fill={isOnline ? '#10B981' : '#94A3B8'} color={isOnline ? '#10B981' : '#94A3B8'} />
-              <Typography variant="caption" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'inline' } }}>
-                {isOnline ? (isAr ? 'متاح للطلبات' : 'Online') : (isAr ? 'غير متصل' : 'Offline')}
-              </Typography>
-              <Switch
-                size="small"
-                checked={isOnline}
-                onChange={(e) => setIsOnline(e.target.checked)}
-                color="success"
+                icon={<Truck className="w-5 h-5 text-black" />}
+                className="bg-white text-black font-bold shrink-0"
+                size="sm"
               />
-            </Paper>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-white">
+                    {user?.name || (isAr ? 'كابتن أطلب' : 'Otlob Courier')}
+                  </span>
+                  <Chip size="sm" variant="flat" color="success" className="text-[10px] h-5 font-bold">
+                    {isAr ? 'مندوب معتمد' : 'Verified'}
+                  </Chip>
+                </div>
+                <span className="text-[10px] text-neutral-400 font-mono block">
+                  {isAr ? 'إدارة الشحن اللوجستي والتسليم' : 'Fleet & Dispatch Center'}
+                </span>
+              </div>
+            </div>
+          </Link>
+        </div>
 
-            <Button
-              component={Link}
-              href={`/${locale}`}
-              target="_blank"
-              variant="outlined"
-              size="small"
-              endIcon={<ExternalLink size={14} />}
-              sx={{
-                display: { xs: 'none', sm: 'inline-flex' },
-                color: 'text.primary',
-                borderColor: '#E2E8F0',
-                bgcolor: '#F8FAFC',
-                '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' },
-              }}
-            >
-              {isAr ? 'المتجر' : 'Store'}
-            </Button>
+        <div className="flex items-center gap-3">
+          {/* Status Shift Switch */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-900 border border-neutral-800">
+            <Circle
+              className={`w-2 h-2 ${isOnline ? 'fill-emerald-400 text-emerald-400' : 'fill-neutral-500 text-neutral-500'}`}
+            />
+            <span className="text-xs font-bold text-neutral-300 hidden sm:inline">
+              {isOnline ? (isAr ? 'متاح للطلبات' : 'Online') : (isAr ? 'غير متصل' : 'Offline')}
+            </span>
+            <Switch
+              size="sm"
+              isSelected={isOnline}
+              onValueChange={setIsOnline}
+              color="success"
+              aria-label="Online status"
+            />
+          </div>
 
-            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' }, height: 24, alignSelf: 'center' }} />
+          <Button
+            as={Link}
+            href={`/${locale}`}
+            target="_blank"
+            size="sm"
+            variant="bordered"
+            className="hidden sm:inline-flex border-neutral-800 text-neutral-300 hover:text-white text-xs font-bold"
+            endContent={<ExternalLink className="w-3.5 h-3.5" />}
+          >
+            {isAr ? 'المتجر' : 'Store'}
+          </Button>
 
-            <IconButton
-              onClick={() => logout()}
-              color="error"
-              size="small"
-              sx={{
-                border: '1px solid #FEE2E2',
-                bgcolor: '#FEF2F2',
-                '&:hover': { bgcolor: '#FEE2E2' },
-              }}
-              title={isAr ? 'تسجيل الخروج' : 'Sign Out'}
-            >
-              <LogOut size={16} style={{ transform: isAr ? 'rotate(180deg)' : 'none' }} />
-            </IconButton>
-          </Stack>
-        </Toolbar>
-      </AppBar>
+          <button
+            onClick={() => logout()}
+            className="p-2 rounded-xl border border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-rose-400 hover:border-rose-900/50 transition-colors"
+            title={isAr ? 'تسجيل الخروج' : 'Sign Out'}
+          >
+            <LogOut className="w-4 h-4 rtl:rotate-180" />
+          </button>
+        </div>
+      </header>
 
-      {/* Desktop Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: 260,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 260,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            borderRight: '1px solid #E2E8F0',
-            top: 64,
-            height: 'calc(100vh - 64px)',
-          },
-        }}
-        open
-      >
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:block w-64 pt-16 shrink-0 h-screen sticky top-0">
         {drawerContent}
-      </Drawer>
+      </aside>
 
       {/* Mobile Drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: 260,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            top: 64,
-            height: 'calc(100vh - 64px)',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="relative w-64 max-w-full z-10">{drawerContent}</div>
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, sm: 3, md: 4 },
-          width: { md: `calc(100% - 260px)` },
-          mt: '64px',
-          bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
-        }}
-      >
-        <Box sx={{ maxWidth: '1440px', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {children}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-export default function CourierDashboardLayout({ children }: CourierLayoutProps) {
-  return (
-    <MuiProvider>
-      <CourierLayoutInner>{children}</CourierLayoutInner>
-    </MuiProvider>
+      <main className="flex-1 pt-20 pb-12 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto w-full">
+        {children}
+      </main>
+    </div>
   );
 }

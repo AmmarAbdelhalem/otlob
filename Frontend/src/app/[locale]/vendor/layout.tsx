@@ -3,28 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Avatar,
-  IconButton,
-  Button,
-  Divider,
-  Paper,
-  Stack,
-  Alert,
-  AlertTitle,
-  CircularProgress,
-} from '@mui/material';
+import { Avatar, Chip, Button } from '@heroui/react';
 import {
   TrendingUp,
   ShoppingBag,
@@ -37,15 +16,15 @@ import {
   ExternalLink,
   ShieldCheck,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-import MuiProvider from '@/components/theme/MuiProvider';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 interface VendorLayoutProps {
   children: React.ReactNode;
 }
 
-function VendorLayoutInner({ children }: VendorLayoutProps) {
+export default function VendorDashboardLayout({ children }: VendorLayoutProps) {
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -64,25 +43,25 @@ function VendorLayoutInner({ children }: VendorLayoutProps) {
   const navLinks = [
     {
       href: `/${locale}/vendor/dashboard`,
-      icon: <TrendingUp size={18} />,
+      icon: <TrendingUp className="w-4 h-4" />,
       labelAr: 'نظرة عامة والمبيعات',
       labelEn: 'Overview & Analytics',
     },
     {
       href: `/${locale}/vendor/orders`,
-      icon: <ShoppingBag size={18} />,
+      icon: <ShoppingBag className="w-4 h-4" />,
       labelAr: 'الطلبات الواردة',
       labelEn: 'Incoming Orders',
     },
     {
       href: `/${locale}/vendor/products`,
-      icon: <Package size={18} />,
+      icon: <Package className="w-4 h-4" />,
       labelAr: 'المنتجات والمخزون',
       labelEn: 'Parts & Stock',
     },
     {
       href: `/${locale}/vendor/settings`,
-      icon: <Settings size={18} />,
+      icon: <Settings className="w-4 h-4" />,
       labelAr: 'إعدادات المتجر والفرع',
       labelEn: 'Store Settings',
     },
@@ -90,265 +69,163 @@ function VendorLayoutInner({ children }: VendorLayoutProps) {
 
   if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-        <CircularProgress color="primary" />
-      </Box>
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
     );
   }
 
   const isPending = user?.status === 'pending';
 
   const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 2 }}>
-      <Box sx={{ px: 1, py: 1.5 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {isAr ? 'إدارة الفرع والتوريد' : 'Vendor Navigation'}
-        </Typography>
-      </Box>
+    <div className="flex flex-col h-full p-4 justify-between bg-neutral-950 border-e border-neutral-800">
+      <div className="space-y-4">
+        <div className="px-2 py-1">
+          <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+            {isAr ? 'إدارة الفرع والتوريد' : 'Vendor Navigation'}
+          </span>
+        </div>
 
-      <List sx={{ flex: 1, p: 0 }}>
-        {navLinks.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <ListItem key={item.href} disablePadding sx={{ mb: 0.75 }}>
-              <ListItemButton
-                component={Link}
+        <nav className="space-y-1">
+          {navLinks.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                sx={{
-                  borderRadius: '12px',
-                  py: 1.25,
-                  px: 1.75,
-                  bgcolor: active ? 'rgba(37,99,235,0.08)' : 'transparent',
-                  color: active ? 'primary.main' : 'text.primary',
-                  fontWeight: active ? 700 : 500,
-                  border: active ? '1px solid rgba(37,99,235,0.2)' : '1px solid transparent',
-                  '&:hover': {
-                    bgcolor: active ? 'rgba(37,99,235,0.12)' : 'rgba(0,0,0,0.04)',
-                  },
-                }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  active
+                    ? 'bg-neutral-800 text-white border border-neutral-700 shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900 border border-transparent'
+                }`}
               >
-                <ListItemIcon sx={{ minWidth: 36, color: active ? 'primary.main' : 'text.secondary' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <Typography sx={{ flex: 1, fontSize: '0.8125rem', fontWeight: active ? 700 : 500 }}>
-                  {isAr ? item.labelAr : item.labelEn}
-                </Typography>
-                {active && (
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main' }} />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+                <span className={active ? 'text-white' : 'text-neutral-400'}>{item.icon}</span>
+                <span className="flex-1">{isAr ? item.labelAr : item.labelEn}</span>
+                {active && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: '#F8FAFC', borderColor: '#E2E8F0', borderRadius: '16px' }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-          <ShieldCheck size={16} color="#2563EB" />
-          <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.primary' }}>
+      <div className="p-3.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+          <span className="text-xs font-bold text-neutral-200">
             {isAr ? 'رخصة المتجر المعتمد' : 'Verified Vendor License'}
-          </Typography>
-        </Stack>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.7rem' }}>
+          </span>
+        </div>
+        <p className="text-[11px] text-neutral-400 leading-relaxed">
           {isAr
             ? 'موثق برقم السجل التجاري والفرع المعتمد لدى منصة أطلب لقطع الغيار.'
             : 'Registered with valid commercial records on Otlob Parts platform.'}
-        </Typography>
-      </Paper>
-    </Box>
+        </p>
+      </div>
+    </div>
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Material UI AppBar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: '#FFFFFF',
-          borderBottom: '1px solid #E2E8F0',
-          color: 'text.primary',
-        }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 }, minHeight: 64 }}>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              sx={{ display: { md: 'none' } }}
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </IconButton>
+    <div className="flex min-h-screen bg-black text-neutral-100">
+      {/* Top Navbar */}
+      <header className="fixed top-0 inset-x-0 h-16 z-40 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 px-4 sm:px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
 
-            <Box
-              component={Link}
-              href={`/${locale}/vendor/dashboard`}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
+          <Link href={`/${locale}/vendor/dashboard`}>
+            <div className="flex items-center gap-3">
               <Avatar
-                sx={{
-                  bgcolor: 'primary.main',
-                  width: 40,
-                  height: 40,
-                  boxShadow: '0 4px 10px rgba(37,99,235,0.25)',
-                }}
-              >
-                <Store size={20} />
-              </Avatar>
-              <Box>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.2, color: '#0F172A' }}>
+                icon={<Store className="w-5 h-5 text-black" />}
+                className="bg-white text-black font-bold shrink-0"
+                size="sm"
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-white">
                     {user?.name || (isAr ? 'متجر التاجر المعتمد' : 'Merchant Partner')}
-                  </Typography>
+                  </span>
                   <Chip
-                    label={isPending ? (isAr ? 'قيد المراجعة' : 'Pending') : (isAr ? 'موثق ومعتمد' : 'Verified')}
-                    size="small"
+                    size="sm"
+                    variant="flat"
                     color={isPending ? 'warning' : 'success'}
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                  />
-                </Stack>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.65rem', fontFamily: 'monospace' }}>
+                    className="text-[10px] h-5 font-bold"
+                  >
+                    {isPending ? (isAr ? 'قيد المراجعة' : 'Pending') : (isAr ? 'موثق ومعتمد' : 'Verified')}
+                  </Chip>
+                </div>
+                <span className="text-[10px] text-neutral-400 font-mono block">
                   {isAr ? 'بوابة توريد قطع الغيار' : 'Auto Parts Vendor Portal'}
-                </Typography>
-              </Box>
-            </Box>
-          </Stack>
+                </span>
+              </div>
+            </div>
+          </Link>
+        </div>
 
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-            <Button
-              component={Link}
-              href={`/${locale}`}
-              target="_blank"
-              variant="outlined"
-              size="small"
-              endIcon={<ExternalLink size={14} />}
-              sx={{
-                display: { xs: 'none', sm: 'inline-flex' },
-                color: 'text.primary',
-                borderColor: '#E2E8F0',
-                bgcolor: '#F8FAFC',
-                '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' },
-              }}
-            >
-              {isAr ? 'الرجوع للمتجر الرئيسي' : 'Public Store'}
-            </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            as={Link}
+            href={`/${locale}`}
+            target="_blank"
+            size="sm"
+            variant="bordered"
+            className="hidden sm:inline-flex border-neutral-800 text-neutral-300 hover:text-white text-xs font-bold"
+            endContent={<ExternalLink className="w-3.5 h-3.5" />}
+          >
+            {isAr ? 'الرجوع للمتجر الرئيسي' : 'Public Store'}
+          </Button>
 
-            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' }, height: 24, alignSelf: 'center' }} />
+          <button
+            onClick={() => logout()}
+            className="p-2 rounded-xl border border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-rose-400 hover:border-rose-900/50 transition-colors"
+            title={isAr ? 'تسجيل الخروج' : 'Sign Out'}
+          >
+            <LogOut className="w-4 h-4 rtl:rotate-180" />
+          </button>
+        </div>
+      </header>
 
-            <IconButton
-              onClick={() => logout()}
-              color="error"
-              size="small"
-              sx={{
-                border: '1px solid #FEE2E2',
-                bgcolor: '#FEF2F2',
-                '&:hover': { bgcolor: '#FEE2E2' },
-              }}
-              title={isAr ? 'تسجيل الخروج' : 'Sign Out'}
-            >
-              <LogOut size={16} style={{ transform: isAr ? 'rotate(180deg)' : 'none' }} />
-            </IconButton>
-          </Stack>
-        </Toolbar>
-      </AppBar>
-
-      {/* Desktop Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: 260,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 260,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            borderRight: '1px solid #E2E8F0',
-            top: 64,
-            height: 'calc(100vh - 64px)',
-          },
-        }}
-        open
-      >
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:block w-64 pt-16 shrink-0 h-screen sticky top-0">
         {drawerContent}
-      </Drawer>
+      </aside>
 
       {/* Mobile Drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: 260,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-            top: 64,
-            height: 'calc(100vh - 64px)',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="relative w-64 max-w-full z-10">{drawerContent}</div>
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, sm: 3, md: 4 },
-          width: { md: `calc(100% - 260px)` },
-          mt: '64px',
-          bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
-        }}
-      >
-        <Box sx={{ maxWidth: '1440px', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {isPending && (
-            <Alert
-              severity="warning"
-              variant="outlined"
-              icon={<AlertTriangle size={20} color="#D97706" />}
-              sx={{
-                bgcolor: '#FFFBEB',
-                borderColor: '#FDE68A',
-                borderRadius: '16px',
-              }}
-            >
-              <AlertTitle sx={{ fontWeight: 700, mb: 0.5 }}>
+      <main className="flex-1 pt-20 pb-12 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto w-full space-y-4">
+        {isPending && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <span className="font-bold block text-sm text-amber-300">
                 {isAr ? 'حساب التاجر قيد المراجعة والاعتماد' : 'Merchant Account Pending Verification'}
-              </AlertTitle>
-              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#92400E' }}>
+              </span>
+              <p className="text-neutral-300 leading-relaxed">
                 {isAr
                   ? 'تم استلام بيانات السجل التجاري ورخصة المتجر بنجاح. يتم تدقيق بيانات الفرع من فريق إدارة أطلب خلال 24 ساعة لتفعيل استقبال الطلبات الحية والتوصيل.'
                   : 'Your Commercial Register and store credentials have been received. Our operations team is reviewing your details within 24 hours to enable live order dispatch.'}
-              </Typography>
-            </Alert>
-          )}
+              </p>
+            </div>
+          </div>
+        )}
 
-          {children}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
-export default function VendorDashboardLayout({ children }: VendorLayoutProps) {
-  return (
-    <MuiProvider>
-      <VendorLayoutInner>{children}</VendorLayoutInner>
-    </MuiProvider>
+        {children}
+      </main>
+    </div>
   );
 }
