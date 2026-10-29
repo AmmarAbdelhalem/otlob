@@ -62,15 +62,21 @@ class Product extends Model
     }
 
     /**
-     * Scope to products compatible with a specific vehicle make, model, and year.
+     * Scope to products compatible with a specific vehicle make, optional model, and optional year.
      */
-    public function scopeCompatibleWithVehicle(Builder $query, string $make, string $model, int $year): Builder
+    public function scopeCompatibleWithVehicle(Builder $query, ?string $make, ?string $model = null, ?int $year = null): Builder
     {
         return $query->whereHas('compatibilities', function (Builder $q) use ($make, $model, $year) {
-            $q->whereRaw('LOWER(make) = ?', [strtolower($make)])
-              ->whereRaw('LOWER(model) = ?', [strtolower($model)])
-              ->where('year_from', '<=', $year)
-              ->where('year_to', '>=', $year);
+            if ($make) {
+                $q->whereRaw('LOWER(TRIM(make)) = ?', [strtolower(trim($make))]);
+            }
+            if ($model) {
+                $q->whereRaw('LOWER(TRIM(model)) = ?', [strtolower(trim($model))]);
+            }
+            if ($year !== null && $year > 0) {
+                $q->where('year_from', '<=', $year)
+                  ->where('year_to', '>=', $year);
+            }
         });
     }
 

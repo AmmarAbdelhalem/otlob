@@ -11,19 +11,30 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        $roleValue = $this->role instanceof UserType ? $this->role->value : (string) $this->role;
+        return $roleValue === 'admin'
+            || (method_exists($this, 'hasRole') && $this->hasRole('admin'))
+            || str_ends_with((string) $this->email, '@otlobparts.com');
+    }
 
     protected $table = 'users';
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'phone',

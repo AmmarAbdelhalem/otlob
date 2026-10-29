@@ -165,8 +165,9 @@ class Order extends Model
     /**
      * Scope by order status.
      */
-    public function scopeByStatus(Builder $query, OrderStatus $status): Builder
+    public function scopeByStatus(Builder $query, OrderStatus|string $status): Builder
     {
-        return $query->where('order_status', $status->value);
+        $value = $status instanceof OrderStatus ? $status->value : $status;
+        return $query->where('order_status', $value);
     }
 }
