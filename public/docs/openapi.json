@@ -1,0 +1,1735 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Otlob Auto Parts Marketplace & Delivery API",
+        "description": "High-scale, on-demand automotive parts marketplace backend with Split Cart Checkout, Geospatial Courier Dispatching, and Double-Entry Accounting Ledger.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Otlob API Engineering Team",
+            "email": "engineering@otlob.com",
+            "url": "https://otlob.com"
+        },
+        "license": {
+            "name": "Proprietary",
+            "url": "https://otlob.com/terms"
+        }
+    },
+    "servers": [
+        {
+            "url": "/api/v1",
+            "description": "Current API Host"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Multi-role registration, login, Sanctum token issuance and device FCM push tokens."
+        },
+        {
+            "name": "Catalog & Fitment",
+            "description": "High-scale part search by OEM number, SKU, and vehicle Make/Model/Year compatibility."
+        },
+        {
+            "name": "Customer & Orders",
+            "description": "Customer garage management, multi-merchant split cart checkout, and real-time live delivery tracking."
+        },
+        {
+            "name": "Merchant Management",
+            "description": "Automotive part catalogue publishing, stock adjustment, sub-order fulfillment, and merchant ledger wallet."
+        },
+        {
+            "name": "Courier Fleet & Dispatch",
+            "description": "Live Redis GPS beacon pinging, status toggle, order acceptance, counter pickup, delivery OTP verification, and remittance submission."
+        },
+        {
+            "name": "Admin Operations & Financials",
+            "description": "Merchant/courier vetting, platform-wide order monitoring, cash remittance audits, and financial ledger revenue reports."
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Sanctum Token",
+                "description": "Enter your personal access token obtained from /api/v1/auth/login or /api/v1/auth/register."
+            }
+        },
+        "schemas": {
+            "StandardResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Operation completed successfully."
+                    },
+                    "data": {
+                        "type": "object"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Unprocessable Entity or Unauthorized."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "01a13e6e-df73-7244-a51d-72666647096b"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Ahmed Mansour"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "01012345678"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "ahmed@example.com"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "customer",
+                            "merchant",
+                            "courier",
+                            "admin"
+                        ],
+                        "example": "customer"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "active",
+                            "suspended"
+                        ],
+                        "example": "active"
+                    },
+                    "fcm_token": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "merchant_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Brembo Ceramic Front Brake Pads"
+                    },
+                    "sku": {
+                        "type": "string",
+                        "example": "BRM-P83082N"
+                    },
+                    "oem_number": {
+                        "type": "string",
+                        "example": "04465-02220"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "High durability ceramic front brake pads."
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1450
+                    },
+                    "stock_quantity": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "weight_kg": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2.4
+                    },
+                    "length_cm": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 20
+                    },
+                    "width_cm": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 15
+                    },
+                    "height_cm": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 8
+                    },
+                    "condition": {
+                        "type": "string",
+                        "enum": [
+                            "new",
+                            "used",
+                            "refurbished"
+                        ],
+                        "example": "new"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                }
+            },
+            "CustomerVehicle": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "make": {
+                        "type": "string",
+                        "example": "Toyota"
+                    },
+                    "model": {
+                        "type": "string",
+                        "example": "Corolla"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "example": 2020
+                    },
+                    "vin": {
+                        "type": "string",
+                        "maxLength": 17,
+                        "example": "JTDBR32E200192831"
+                    },
+                    "is_default": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                }
+            },
+            "Order": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "parent_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "order_code": {
+                        "type": "string",
+                        "example": "ORD-2026-X82F"
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "merchant_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "courier_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "subtotal": {
+                        "type": "number",
+                        "example": 1450
+                    },
+                    "delivery_fee": {
+                        "type": "number",
+                        "example": 45
+                    },
+                    "service_fee": {
+                        "type": "number",
+                        "example": 15
+                    },
+                    "total_amount": {
+                        "type": "number",
+                        "example": 1510
+                    },
+                    "payment_type": {
+                        "type": "string",
+                        "enum": [
+                            "cod",
+                            "card",
+                            "wallet"
+                        ],
+                        "example": "cod"
+                    },
+                    "payment_status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "failed",
+                            "refunded"
+                        ],
+                        "example": "pending"
+                    },
+                    "order_status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "accepted_by_merchant",
+                            "preparing",
+                            "ready_for_pickup",
+                            "assigned_to_courier",
+                            "in_transit",
+                            "delivered",
+                            "cancelled"
+                        ],
+                        "example": "ready_for_pickup"
+                    },
+                    "delivery_lat": {
+                        "type": "number",
+                        "example": 30.0444
+                    },
+                    "delivery_lng": {
+                        "type": "number",
+                        "example": 31.2357
+                    },
+                    "delivery_otp": {
+                        "type": "string",
+                        "example": "482103"
+                    }
+                }
+            },
+            "Wallet": {
+                "type": "object",
+                "properties": {
+                    "wallet_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "balance": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2529
+                    },
+                    "currency": {
+                        "type": "string",
+                        "example": "EGP"
+                    },
+                    "collected_cash_in_hand": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 1200
+                    },
+                    "max_cod_limit": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 3000
+                    },
+                    "is_cod_suspended": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "example": false
+                    }
+                }
+            }
+        }
+    },
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user account (Customer, Merchant, or Courier)",
+                "description": "Creates a base user, issues Sanctum personal token with role abilities, and initializes the role profile and double-entry wallet.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "phone",
+                                    "password",
+                                    "password_confirmation",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Hassan El-Ghazaly"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "01099887766"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "hassan@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "secret123"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "customer",
+                                            "merchant",
+                                            "courier"
+                                        ],
+                                        "example": "customer"
+                                    },
+                                    "store_name": {
+                                        "type": "string",
+                                        "description": "Required if role is merchant",
+                                        "example": "Ghazaly Auto Spares"
+                                    },
+                                    "commercial_registration_number": {
+                                        "type": "string",
+                                        "description": "Required if role is merchant",
+                                        "example": "CR-10938472"
+                                    },
+                                    "address_text": {
+                                        "type": "string",
+                                        "description": "Required if role is merchant",
+                                        "example": "25 El-Tahrir St, Dokki, Giza"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 30.0382
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 31.2115
+                                    },
+                                    "vehicle_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "motorcycle",
+                                            "car",
+                                            "van"
+                                        ],
+                                        "description": "Required if role is courier",
+                                        "example": "motorcycle"
+                                    },
+                                    "max_load_capacity": {
+                                        "type": "number",
+                                        "description": "Optional for courier (kg)",
+                                        "example": 25
+                                    },
+                                    "max_volume_capacity": {
+                                        "type": "number",
+                                        "description": "Optional for courier (m3)",
+                                        "example": 0.15
+                                    },
+                                    "max_cod_limit": {
+                                        "type": "number",
+                                        "description": "Optional for courier (EGP)",
+                                        "example": 3000
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Account successfully created and token issued.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StandardResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed."
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Authenticate with Phone/Email and Password",
+                "description": "Verifies credentials, checks suspension status, and issues Sanctum token with role claim.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "login",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string",
+                                        "description": "Phone number or email address",
+                                        "example": "01012345678"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "postman-suite"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authentication successful.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StandardResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials."
+                    },
+                    "403": {
+                        "description": "Account suspended."
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Revoke active token",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token revoked successfully."
+                    },
+                    "401": {
+                        "description": "Unauthenticated."
+                    }
+                }
+            }
+        },
+        "/auth/fcm-token": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update Firebase Cloud Messaging device push token",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "fcm_token"
+                                ],
+                                "properties": {
+                                    "fcm_token": {
+                                        "type": "string",
+                                        "example": "dKj49a...fcm_token_sample"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "FCM token updated."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authenticated profile and role details",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current user profile with role relations."
+                    }
+                }
+            }
+        },
+        "/products/search": {
+            "get": {
+                "tags": [
+                    "Catalog & Fitment"
+                ],
+                "summary": "High-scale automotive catalog search with fitment filters and Redis caching",
+                "parameters": [
+                    {
+                        "name": "make",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Toyota",
+                        "description": "Car manufacturer"
+                    },
+                    {
+                        "name": "model",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Corolla",
+                        "description": "Car model"
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 2020,
+                        "description": "Manufacturing year"
+                    },
+                    {
+                        "name": "oem_number",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "04465-02220",
+                        "description": "OEM part number"
+                    },
+                    {
+                        "name": "sku",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "BRM-P83082N",
+                        "description": "Store SKU identifier"
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "brake",
+                        "description": "Keyword search in name/description"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated product search results."
+                    }
+                }
+            }
+        },
+        "/customer/vehicles": {
+            "get": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "List vehicles in customer's virtual garage",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of vehicles."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "Add a vehicle to customer's garage",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "make",
+                                    "model",
+                                    "year"
+                                ],
+                                "properties": {
+                                    "make": {
+                                        "type": "string",
+                                        "example": "Toyota"
+                                    },
+                                    "model": {
+                                        "type": "string",
+                                        "example": "Corolla"
+                                    },
+                                    "year": {
+                                        "type": "integer",
+                                        "example": 2020
+                                    },
+                                    "vin": {
+                                        "type": "string",
+                                        "maxLength": 17,
+                                        "example": "JTDBR32E200192831"
+                                    },
+                                    "is_default": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "example": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle added to garage."
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "List customer's order history with breakdown",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of customer orders."
+                    }
+                }
+            }
+        },
+        "/orders/checkout": {
+            "post": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "Multi-merchant Split Cart Checkout",
+                "description": "Groups items by merchant, deducts inventory with lockForUpdate(), generates isolated sub-orders with Haversine delivery fees, 6-digit delivery OTPs, and triggers courier discovery.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "items",
+                                    "delivery_lat",
+                                    "delivery_lng",
+                                    "payment_type"
+                                ],
+                                "properties": {
+                                    "delivery_lat": {
+                                        "type": "number",
+                                        "example": 30.0444
+                                    },
+                                    "delivery_lng": {
+                                        "type": "number",
+                                        "example": 31.2357
+                                    },
+                                    "payment_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "cod",
+                                            "card",
+                                            "wallet"
+                                        ],
+                                        "example": "cod"
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "product_id",
+                                                "quantity"
+                                            ],
+                                            "properties": {
+                                                "product_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "quantity": {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "example": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Order successfully split and placed."
+                    },
+                    "422": {
+                        "description": "Insufficient stock or invalid coordinates."
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "Get full breakdown for specific order",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order subtotal, shipping, service fee, and sub-orders details."
+                    },
+                    "404": {
+                        "description": "Order not found."
+                    }
+                }
+            }
+        },
+        "/orders/{id}/track": {
+            "get": {
+                "tags": [
+                    "Customer & Orders"
+                ],
+                "summary": "Real-time delivery tracking & courier Redis GPS coordinates",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Live GPS coordinates, pickup location, dropoff location, and courier status."
+                    }
+                }
+            }
+        },
+        "/merchant/products": {
+            "post": {
+                "tags": [
+                    "Merchant Management"
+                ],
+                "summary": "Upload a new part to merchant store catalog",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "sku",
+                                    "price",
+                                    "stock_quantity",
+                                    "weight_kg",
+                                    "length_cm",
+                                    "width_cm",
+                                    "height_cm",
+                                    "condition"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Denso Iridium Power Spark Plug Set"
+                                    },
+                                    "sku": {
+                                        "type": "string",
+                                        "example": "DNS-IK20TT"
+                                    },
+                                    "oem_number": {
+                                        "type": "string",
+                                        "example": "90919-01247"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Twin-tip iridium spark plugs for improved combustion."
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "example": 980
+                                    },
+                                    "stock_quantity": {
+                                        "type": "integer",
+                                        "example": 20
+                                    },
+                                    "weight_kg": {
+                                        "type": "number",
+                                        "example": 0.45
+                                    },
+                                    "length_cm": {
+                                        "type": "number",
+                                        "example": 12
+                                    },
+                                    "width_cm": {
+                                        "type": "number",
+                                        "example": 8
+                                    },
+                                    "height_cm": {
+                                        "type": "number",
+                                        "example": 4
+                                    },
+                                    "condition": {
+                                        "type": "string",
+                                        "enum": [
+                                            "new",
+                                            "used",
+                                            "refurbished"
+                                        ],
+                                        "example": "new"
+                                    },
+                                    "compatibilities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "make",
+                                                "model",
+                                                "year_from",
+                                                "year_to"
+                                            ],
+                                            "properties": {
+                                                "make": {
+                                                    "type": "string",
+                                                    "example": "Toyota"
+                                                },
+                                                "model": {
+                                                    "type": "string",
+                                                    "example": "Corolla"
+                                                },
+                                                "year_from": {
+                                                    "type": "integer",
+                                                    "example": 2014
+                                                },
+                                                "year_to": {
+                                                    "type": "integer",
+                                                    "example": 2024
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Product published."
+                    }
+                }
+            }
+        },
+        "/merchant/products/{id}/stock": {
+            "patch": {
+                "tags": [
+                    "Merchant Management"
+                ],
+                "summary": "Update product inventory stock level",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "stock_quantity"
+                                ],
+                                "properties": {
+                                    "stock_quantity": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "example": 35
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Stock updated."
+                    }
+                }
+            }
+        },
+        "/merchant/orders": {
+            "get": {
+                "tags": [
+                    "Merchant Management"
+                ],
+                "summary": "View store's sub-orders",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of incoming sub-orders."
+                    }
+                }
+            }
+        },
+        "/merchant/orders/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Merchant Management"
+                ],
+                "summary": "Update sub-order status (e.g. preparing, ready_for_pickup)",
+                "description": "When marked 'ready_for_pickup', triggers automated courier proximity dispatch discovery job.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accepted_by_merchant",
+                                            "preparing",
+                                            "ready_for_pickup",
+                                            "cancelled"
+                                        ],
+                                        "example": "ready_for_pickup"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order transitioned and event broadcast."
+                    }
+                }
+            }
+        },
+        "/merchant/wallet": {
+            "get": {
+                "tags": [
+                    "Merchant Management"
+                ],
+                "summary": "View merchant wallet balance and ledger statement",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Wallet balance and itemized double-entry ledger entries."
+                    }
+                }
+            }
+        },
+        "/courier/orders": {
+            "get": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Get active delivery and available dispatched offers",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Active delivery details and proximity offer pool."
+                    }
+                }
+            }
+        },
+        "/courier/location": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Ping live GPS coordinates to Redis GEO & heartbeat key",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 30.0444
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": 31.2357
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Coordinates recorded in Redis."
+                    }
+                }
+            }
+        },
+        "/courier/status": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Toggle online/offline dispatch readiness",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "is_online": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status toggled."
+                    }
+                }
+            }
+        },
+        "/courier/orders/{id}/accept": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Accept a dispatched sub-order offer",
+                "description": "Enforces COD safety limit guard: excludes courier if cash debt exceeds max COD limit.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Offer accepted and assigned to courier."
+                    },
+                    "403": {
+                        "description": "COD limit exceeded or courier suspended."
+                    },
+                    "409": {
+                        "description": "Order already claimed by another courier."
+                    }
+                }
+            }
+        },
+        "/courier/orders/{id}/pickup": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Confirm pickup from merchant counter",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "courier_paid_merchant_cash": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "example": false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order marked in transit."
+                    }
+                }
+            }
+        },
+        "/courier/orders/{id}/verify-otp": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Verify customer OTP upon delivery & trigger double-entry settlement",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "otp"
+                                ],
+                                "properties": {
+                                    "otp": {
+                                        "type": "string",
+                                        "example": "482103"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OTP verified, order delivered, and funds settled in ledger."
+                    },
+                    "422": {
+                        "description": "Invalid OTP."
+                    }
+                }
+            }
+        },
+        "/courier/remittances": {
+            "post": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "Submit collected cash remittance receipt",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "amount",
+                                    "method"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "example": 1500
+                                    },
+                                    "method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "fawry",
+                                            "instapay",
+                                            "bank_transfer",
+                                            "branch_cash"
+                                        ],
+                                        "example": "instapay"
+                                    },
+                                    "proof_receipt": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Receipt screenshot/photo (max 5MB)"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Remittance submitted for admin review."
+                    }
+                }
+            }
+        },
+        "/courier/wallet": {
+            "get": {
+                "tags": [
+                    "Courier Fleet & Dispatch"
+                ],
+                "summary": "View courier cash-in-hand, COD limit, and earnings",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Courier liability, COD suspension status, and earnings balance."
+                    }
+                }
+            }
+        },
+        "/admin/merchants/pending": {
+            "get": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "List merchant store applications awaiting vetting",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pending merchant applications."
+                    }
+                }
+            }
+        },
+        "/admin/merchants/{id}/approve": {
+            "patch": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "Approve and activate merchant store",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Merchant approved."
+                    }
+                }
+            }
+        },
+        "/admin/couriers/pending": {
+            "get": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "List courier profiles pending review or COD suspended",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of couriers."
+                    }
+                }
+            }
+        },
+        "/admin/couriers/{id}/approve": {
+            "patch": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "Approve or lift suspension on courier profile",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Courier profile approved."
+                    }
+                }
+            }
+        },
+        "/admin/orders": {
+            "get": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "Global oversight across all parent and sub-orders",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "parent_only",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of all platform orders."
+                    }
+                }
+            }
+        },
+        "/admin/remittances": {
+            "get": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "List pending courier cash remittances awaiting audit",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pending remittance receipts."
+                    }
+                }
+            }
+        },
+        "/admin/remittances/{id}/approve": {
+            "post": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "Approve remittance, clear courier cash debt, and unfreeze COD",
+                "description": "Executes double-entry transaction debiting escrow/bank and crediting courier wallet.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Remittance settled and courier debt cleared."
+                    }
+                }
+            }
+        },
+        "/admin/reports/financials": {
+            "get": {
+                "tags": [
+                    "Admin Operations & Financials"
+                ],
+                "summary": "Platform revenue, GMV, service fee income, and escrow balances",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Financial summary metrics."
+                    }
+                }
+            }
+        }
+    }
+}
