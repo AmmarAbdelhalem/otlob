@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { Card, CardBody, Button, Chip, Progress, Tooltip } from '@heroui/react';
 import { Heart, RefreshCw, ShoppingCart, Eye, Star, CheckCircle, AlertCircle } from 'lucide-react';
 import { Locale, Product } from '@/lib/api/types';
 import { formatMoney, getMessages, resolveLocalized } from '@/lib/i18n';
@@ -50,8 +51,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // 1. Compact Variant (For top offers strips and dense sidebar widgets)
   if (variant === 'compact') {
     return (
-      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-surface border border-surface-border hover:shadow-md transition-all group">
-        <div className="w-16 h-16 rounded-lg bg-slate-50 dark:bg-slate-800 shrink-0 p-1 flex items-center justify-center overflow-hidden border border-surface-border">
+      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-neutral-700 transition-all group">
+        <div className="w-16 h-16 rounded-lg bg-neutral-900 shrink-0 p-1 flex items-center justify-center overflow-hidden border border-neutral-800/80">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={product.thumbnail || '/images/products/brake-pads.svg'}
@@ -62,29 +63,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex-1 min-w-0">
           <Link
             href={`/${locale}/product/${product.sku}`}
-            className="text-xs font-bold text-text truncate block hover:text-primary transition-colors"
+            className="text-xs font-bold text-white truncate block hover:text-neutral-300 transition-colors"
           >
             {product.name}
           </Link>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs font-black text-primary">
+            <span className="text-xs font-black text-white">
               {formatMoney(product.price, locale)}
             </span>
             {product.originalPrice && (
-              <span className="text-[10px] text-text-muted line-through">
+              <span className="text-[10px] text-neutral-500 line-through">
                 {formatMoney(product.originalPrice, locale)}
               </span>
             )}
           </div>
         </div>
-        <button
+        <Button
+          isIconOnly
+          size="sm"
           onClick={() => addToCart(product, 1)}
-          className="p-2 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white transition-colors cursor-pointer shrink-0"
+          className="bg-white text-black font-bold hover:bg-neutral-200"
           title={t.common.addToCart}
           aria-label={t.common.addToCart}
         >
-          <ShoppingCart className="w-4 h-4" />
-        </button>
+          <ShoppingCart className="w-3.5 h-3.5" />
+        </Button>
       </div>
     );
   }
@@ -92,122 +95,132 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // 2. List Variant (For Shop horizontal list view)
   if (variant === 'list') {
     return (
-      <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-surface border border-surface-border hover:shadow-lg transition-all group">
-        <div className="sm:w-56 h-48 rounded-xl bg-slate-50 dark:bg-slate-800 shrink-0 p-4 flex items-center justify-center overflow-hidden relative border border-surface-border">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={product.thumbnail || '/images/products/brake-pads.svg'}
-            alt={product.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-          />
-          {product.discountPercentage && (
-            <span className="absolute top-2 start-2 bg-danger text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-              -{product.discountPercentage}%
-            </span>
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-col justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              {showSku && (
-                <span className="text-[11px] font-mono text-text-muted">{product.sku}</span>
-              )}
-              {activeVehicle && fitmentStatus !== 'unknown' && (
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                    fitmentStatus === 'fits'
-                      ? 'bg-success/10 text-success'
-                      : 'bg-danger/10 text-danger'
-                  }`}
-                >
-                  {fitmentStatus === 'fits' ? (
-                    <>
-                      <CheckCircle className="w-3 h-3" />
-                      <span>{t.vehicleFinder.fitsYourVehicle}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3 h-3" />
-                      <span>{t.vehicleFinder.doesNotFit}</span>
-                    </>
-                  )}
-                </span>
-              )}
-            </div>
-
-            <Link
-              href={`/${locale}/product/${product.sku}`}
-              className="text-sm font-bold text-text hover:text-primary transition-colors block line-clamp-1"
-            >
-              {product.name}
-            </Link>
-
-            <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">
-              {product.description}
-            </p>
-
-            {product.merchant && (
-              <span className="text-[11px] text-text-muted block">
-                {t.common.soldBy}{' '}
-                <span className="font-semibold text-text">{product.merchant.storeName}</span>
-              </span>
+      <Card className="bg-neutral-950 border border-neutral-800 hover:border-neutral-700 transition-all">
+        <CardBody className="p-4 sm:p-5 flex flex-col sm:flex-row gap-5">
+          <div className="sm:w-56 h-48 rounded-xl bg-neutral-900 shrink-0 p-4 flex items-center justify-center overflow-hidden relative border border-neutral-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={product.thumbnail || '/images/products/brake-pads.svg'}
+              alt={product.name}
+              className="w-full h-full object-contain hover:scale-105 transition-transform"
+            />
+            {product.discountPercentage && (
+              <Chip
+                size="sm"
+                color="danger"
+                variant="solid"
+                className="absolute top-2 start-2 text-[10px] font-black h-5"
+              >
+                -{product.discountPercentage}%
+              </Chip>
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-surface-border mt-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-base font-black text-primary">
-                {formatMoney(product.price, locale)}
-              </span>
-              {product.originalPrice && (
-                <span className="text-xs text-text-muted line-through">
-                  {formatMoney(product.originalPrice, locale)}
+          <div className="flex-1 flex flex-col justify-between space-y-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                {showSku && (
+                  <span className="text-[11px] font-mono text-neutral-400">{product.sku}</span>
+                )}
+                {activeVehicle && fitmentStatus !== 'unknown' && (
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={fitmentStatus === 'fits' ? 'success' : 'danger'}
+                    startContent={
+                      fitmentStatus === 'fits' ? (
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3 text-rose-400" />
+                      )
+                    }
+                    className="text-[10px] font-bold"
+                  >
+                    {fitmentStatus === 'fits' ? t.vehicleFinder.fitsYourVehicle : t.vehicleFinder.doesNotFit}
+                  </Chip>
+                )}
+              </div>
+
+              <Link
+                href={`/${locale}/product/${product.sku}`}
+                className="text-sm font-bold text-white hover:text-neutral-300 transition-colors block line-clamp-1"
+              >
+                {product.name}
+              </Link>
+
+              {product.description && (
+                <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+                  {product.description}
+                </p>
+              )}
+
+              {product.merchant && (
+                <span className="text-[11px] text-neutral-500 block">
+                  {t.common.soldBy}{' '}
+                  <span className="font-semibold text-neutral-300">{product.merchant.storeName}</span>
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {showQuickView && (
-                <button
-                  onClick={() => openQuickView(product)}
-                  className="p-2 rounded-lg bg-surface-muted hover:bg-slate-200 dark:hover:bg-slate-700 text-text transition-colors cursor-pointer"
-                  title={t.common.quickView}
+            <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
+              <div className="flex items-baseline gap-2">
+                <span className="text-base font-black text-white">
+                  {formatMoney(product.price, locale)}
+                </span>
+                {product.originalPrice && (
+                  <span className="text-xs text-neutral-500 line-through">
+                    {formatMoney(product.originalPrice, locale)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {showQuickView && (
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="bordered"
+                    className="border-neutral-800 text-neutral-300 hover:text-white"
+                    onClick={() => openQuickView(product)}
+                    title={t.common.quickView}
+                    aria-label={t.common.quickView}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant={isFavorited ? 'solid' : 'bordered'}
+                  className={isFavorited ? 'bg-rose-500 text-white' : 'border-neutral-800 text-neutral-300'}
+                  onClick={() => toggleWishlist(product)}
+                  title={t.common.wishlist}
+                  aria-label={t.common.wishlist}
                 >
-                  <Eye className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={() => toggleWishlist(product)}
-                className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                  isFavorited
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-muted hover:bg-slate-200 dark:hover:bg-slate-700 text-text'
-                }`}
-                title={t.common.wishlist}
-              >
-                <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-              </button>
-              <button
-                onClick={() => addToCart(product, 1)}
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>{t.common.addToCart}</span>
-              </button>
+                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-white text-black font-bold text-xs hover:bg-neutral-200"
+                  startContent={<ShoppingCart className="w-4 h-4" />}
+                  onClick={() => addToCart(product, 1)}
+                >
+                  {t.common.addToCart}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
     );
   }
 
-  // 3. Grid Variant (Default high-impact Partdo card layout)
+  // 3. Grid Variant (Default Vercel Minimalist Dark Card)
   return (
-    <div className="bg-surface rounded-2xl border border-surface-border hover:border-primary/40 hover:shadow-xl transition-all flex flex-col justify-between p-4 relative group">
+    <Card className="bg-neutral-950 border border-neutral-800 hover:border-neutral-700 transition-all p-4 flex flex-col justify-between group">
       <div>
-        {/* Top Badges and Wishlist button */}
-        <div className="relative aspect-4/3 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 mb-3 flex items-center justify-center overflow-hidden border border-surface-border">
+        {/* Top Badges and Media */}
+        <div className="relative aspect-4/3 rounded-xl bg-neutral-900/80 p-4 mb-3 flex items-center justify-center overflow-hidden border border-neutral-800/80">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={product.thumbnail || '/images/products/brake-pads.svg'}
@@ -218,59 +231,61 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Badges Left/Top */}
           <div className="absolute top-2 start-2 flex flex-col gap-1 items-start">
             {product.discountPercentage && (
-              <span className="bg-danger text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+              <Chip size="sm" color="danger" variant="solid" className="text-[9px] font-black h-4 px-1">
                 -{product.discountPercentage}%
-              </span>
+              </Chip>
             )}
             {product.badges?.map((badge, idx) => (
-              <span
-                key={idx}
-                className="bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs"
-              >
+              <Chip key={idx} size="sm" variant="flat" className="text-[9px] font-black h-4 bg-white/20 text-white">
                 {resolveLocalized(badge.text, locale)}
-              </span>
+              </Chip>
             ))}
           </div>
 
-          {/* Floating Actions on Hover (Wishlist, Compare, Quick View) */}
+          {/* Floating Actions on Hover */}
           <div className="absolute top-2 end-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={() => toggleWishlist(product)}
-              className={`p-1.5 rounded-full shadow-md transition-colors cursor-pointer ${
-                isFavorited
-                  ? 'bg-primary text-white'
-                  : 'bg-surface hover:bg-slate-100 dark:hover:bg-slate-700 text-text'
-              }`}
-              title={t.common.wishlist}
-              aria-label={t.common.wishlist}
-            >
-              <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
-            </button>
+            <Tooltip content={t.common.wishlist} placement="left">
+              <Button
+                isIconOnly
+                size="sm"
+                className={`rounded-full shadow-md w-7 h-7 min-w-7 ${
+                  isFavorited ? 'bg-rose-500 text-white' : 'bg-neutral-900 text-neutral-300 hover:text-white border border-neutral-700'
+                }`}
+                onClick={() => toggleWishlist(product)}
+                aria-label={t.common.wishlist}
+              >
+                <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
+              </Button>
+            </Tooltip>
 
             {showCompare && (
-              <button
-                onClick={() => addToCompare(product)}
-                className={`p-1.5 rounded-full shadow-md transition-colors cursor-pointer ${
-                  isCompared
-                    ? 'bg-accent text-white'
-                    : 'bg-surface hover:bg-slate-100 dark:hover:bg-slate-700 text-text'
-                }`}
-                title={t.common.compare}
-                aria-label={t.common.compare}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
+              <Tooltip content={t.common.compare} placement="left">
+                <Button
+                  isIconOnly
+                  size="sm"
+                  className={`rounded-full shadow-md w-7 h-7 min-w-7 ${
+                    isCompared ? 'bg-amber-500 text-black' : 'bg-neutral-900 text-neutral-300 hover:text-white border border-neutral-700'
+                  }`}
+                  onClick={() => addToCompare(product)}
+                  aria-label={t.common.compare}
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
+              </Tooltip>
             )}
 
             {showQuickView && (
-              <button
-                onClick={() => openQuickView(product)}
-                className="p-1.5 rounded-full bg-surface hover:bg-slate-100 dark:hover:bg-slate-700 text-text shadow-md transition-colors cursor-pointer"
-                title={t.common.quickView}
-                aria-label={t.common.quickView}
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </button>
+              <Tooltip content={t.common.quickView} placement="left">
+                <Button
+                  isIconOnly
+                  size="sm"
+                  className="rounded-full shadow-md w-7 h-7 min-w-7 bg-neutral-900 text-neutral-300 hover:text-white border border-neutral-700"
+                  onClick={() => openQuickView(product)}
+                  aria-label={t.common.quickView}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -278,10 +293,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Fitment Indicator Badge if Car Selected */}
         {activeVehicle && fitmentStatus !== 'unknown' && (
           <div
-            className={`text-[10px] font-bold px-2 py-1 rounded-md mb-2 flex items-center gap-1 ${
+            className={`text-[10px] font-bold px-2 py-1 rounded-md mb-2 flex items-center gap-1.5 ${
               fitmentStatus === 'fits'
-                ? 'bg-success/10 text-success'
-                : 'bg-danger/10 text-danger'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
             }`}
           >
             {fitmentStatus === 'fits' ? (
@@ -299,21 +314,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* SKU & Brand */}
-        <div className="flex items-center justify-between text-[11px] text-text-muted mb-1 font-mono">
+        <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1 font-mono">
           {showSku && <span>{product.sku}</span>}
-          {product.brand && <span className="font-semibold text-text">{product.brand}</span>}
+          {product.brand && <span className="font-semibold text-neutral-300">{product.brand}</span>}
         </div>
 
         {/* Product Title */}
         <Link
           href={`/${locale}/product/${product.sku}`}
-          className="text-xs font-bold text-text hover:text-primary transition-colors block line-clamp-2 min-h-[32px] leading-tight"
+          className="text-xs font-bold text-white hover:text-neutral-300 transition-colors block line-clamp-2 min-h-[32px] leading-tight"
         >
           {product.name}
         </Link>
 
         {/* Rating Stars */}
-        <div className="flex items-center gap-1 mt-1.5 text-accent">
+        <div className="flex items-center gap-1 mt-1.5">
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
@@ -321,54 +336,56 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 className={`w-3 h-3 ${
                   star <= Math.round(product.rating || 5)
                     ? 'fill-current text-amber-400'
-                    : 'text-slate-300'
+                    : 'text-neutral-700'
                 }`}
               />
             ))}
           </div>
-          <span className="text-[10px] text-text-muted font-bold">
+          <span className="text-[10px] text-neutral-500 font-bold">
             ({product.reviewCount || 12})
           </span>
         </div>
 
-        {/* Stock Progress Bar (Optional in config) */}
+        {/* Stock Progress Bar */}
         {showStockProgress && (
           <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-[10px] text-text-muted font-semibold">
-              <span>تم بيع: {product.soldCount || 14}</span>
-              <span>المتاح: {product.availableStock || 22}</span>
+            <div className="flex justify-between text-[10px] text-neutral-400 font-semibold">
+              <span>{locale === 'ar' ? `مباع: ${product.soldCount || 14}` : `Sold: ${product.soldCount || 14}`}</span>
+              <span className="text-neutral-300">{locale === 'ar' ? `المتاح: ${product.availableStock || 22}` : `Stock: ${product.availableStock || 22}`}</span>
             </div>
-            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-500 to-primary rounded-full transition-all"
-                style={{ width: `${soldPercent}%` }}
-              />
-            </div>
+            <Progress
+              value={soldPercent}
+              size="sm"
+              color={soldPercent > 80 ? 'danger' : 'default'}
+              className="w-full"
+              aria-label="Stock progress"
+            />
           </div>
         )}
       </div>
 
       {/* Price & Add to Cart Bottom Strip */}
-      <div className="pt-3 border-t border-surface-border flex items-center justify-between mt-3">
+      <div className="pt-3 border-t border-neutral-800/80 flex items-center justify-between mt-3">
         <div>
           {product.originalPrice && (
-            <span className="text-[10px] text-text-muted line-through block leading-none">
+            <span className="text-[10px] text-neutral-500 line-through block leading-none">
               {formatMoney(product.originalPrice, locale)}
             </span>
           )}
-          <span className="text-sm font-black text-primary leading-tight">
+          <span className="text-sm font-black text-white leading-tight">
             {formatMoney(product.price, locale)}
           </span>
         </div>
 
-        <button
+        <Button
+          size="sm"
+          className="bg-white text-black hover:bg-neutral-200 font-bold text-xs"
+          startContent={<ShoppingCart className="w-3.5 h-3.5" />}
           onClick={() => addToCart(product, 1)}
-          className="px-3 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer hover:scale-102"
         >
-          <ShoppingCart className="w-3.5 h-3.5" />
-          <span>{t.common.addToCart}</span>
-        </button>
+          {t.common.addToCart}
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 };

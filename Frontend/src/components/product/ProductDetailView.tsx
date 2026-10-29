@@ -4,6 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  Card,
+  CardBody,
+  Button,
+  Chip,
+  Tabs,
+  Tab,
+  Progress,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Divider,
+} from '@heroui/react';
+import {
   CheckCircle2,
   AlertCircle,
   Truck,
@@ -17,16 +33,12 @@ import {
   Check,
   Phone,
   MapPin,
-  Sparkles,
   Plus,
   Minus,
   ShoppingBag,
   Zap,
   Car,
   ChevronRight,
-  ChevronDown,
-  Layers,
-  FileText,
   BadgeCheck,
 } from 'lucide-react';
 import { Locale, Product } from '@/lib/api/types';
@@ -54,7 +66,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
   // Stores
   const { addItem } = useCartStore();
-  const { activeVehicle, vehicles } = useGarageStore();
+  const { activeVehicle } = useGarageStore();
   const { isInWishlist, toggleWishlist } = useWishlistStore();
   const { isInCompare, toggleCompare } = useCompareStore();
   const { setMiniCartOpen, openGarageModal } = useUIStore();
@@ -64,7 +76,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     product.images?.[0] || product.thumbnail || '/images/products/placeholder.svg'
   );
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'fitment' | 'shipping' | 'reviews'>('desc');
+  const [activeTab, setActiveTab] = useState<string>('desc');
   const [copiedOem, setCopiedOem] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [shareFeedback, setShareFeedback] = useState(false);
@@ -159,12 +171,12 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   return (
     <div className="space-y-10 pb-20">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs text-text-muted flex-wrap">
-        <Link href={`/${locale}`} className="hover:text-primary transition-colors">
+      <nav className="flex items-center gap-2 text-xs text-neutral-400 font-mono flex-wrap">
+        <Link href={`/${locale}`} className="hover:text-white transition-colors">
           {locale === 'ar' ? 'الرئيسية' : 'Home'}
         </Link>
         <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
-        <Link href={`/${locale}/shop`} className="hover:text-primary transition-colors">
+        <Link href={`/${locale}/shop`} className="hover:text-white transition-colors">
           {locale === 'ar' ? 'المتجر' : 'Shop'}
         </Link>
         {product.categorySlug && (
@@ -172,14 +184,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
             <Link
               href={`/${locale}/category/${product.categorySlug}`}
-              className="hover:text-primary transition-colors"
+              className="hover:text-white transition-colors"
             >
               {product.categoryName ? resolveLocalized(product.categoryName, locale) : product.categorySlug}
             </Link>
           </>
         )}
         <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
-        <span className="text-text-main font-medium line-clamp-1 max-w-[280px]">
+        <span className="text-white font-medium line-clamp-1 max-w-[280px]">
           {product.name}
         </span>
       </nav>
@@ -189,31 +201,28 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
         {/* Left Column: Image Gallery (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           {/* Main Showcase Image */}
-          <div className="relative aspect-square rounded-2xl bg-bg-secondary/40 border border-border-color overflow-hidden group flex items-center justify-center p-6 shadow-sm">
+          <Card className="relative aspect-square rounded-2xl bg-[#0a0a0a] border border-[#262626] overflow-hidden group flex items-center justify-center p-6 shadow-sm">
             {/* Badges */}
             <div className="absolute top-4 start-4 z-10 flex flex-col gap-1.5">
               {product.badges?.map((b, i) => (
-                <span
+                <Chip
                   key={i}
-                  className={`text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-white shadow-sm ${
-                    b.variant === 'danger'
-                      ? 'bg-accent'
-                      : b.variant === 'warning'
-                      ? 'bg-amber-500'
-                      : 'bg-primary'
-                  }`}
+                  size="sm"
+                  variant="flat"
+                  className="bg-[#171717] border border-[#262626] text-white font-mono text-[11px]"
                 >
                   {resolveLocalized(b.text, locale)}
-                </span>
+                </Chip>
               ))}
               {product.discountPercentage && product.discountPercentage > 0 && (
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-emerald-600 text-white shadow-sm">
+                <Chip size="sm" color="success" variant="flat" className="font-mono text-[11px]">
                   {locale === 'ar' ? `وفر ${product.discountPercentage}%` : `Save ${product.discountPercentage}%`}
-                </span>
+                </Chip>
               )}
             </div>
 
             {/* Main Image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedImage}
               alt={product.name}
@@ -222,62 +231,69 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
             {/* Quick Action Overlay (Share / Wishlist / Compare) */}
             <div className="absolute top-4 end-4 z-10 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => toggleWishlist(product)}
-                title={locale === 'ar' ? 'إضافة للمفضلة' : 'Add to wishlist'}
-                className={`p-2.5 rounded-full border shadow-md transition-all ${
+              <Button
+                isIconOnly
+                size="sm"
+                variant="flat"
+                onPress={() => toggleWishlist(product)}
+                className={`rounded-full border w-8 h-8 min-w-8 ${
                   isWishlisted
-                    ? 'bg-rose-50 border-rose-200 text-rose-500'
-                    : 'bg-bg-primary/90 border-border-color text-text-muted hover:text-rose-500 hover:border-rose-300'
+                    ? 'bg-rose-500 text-white border-rose-500'
+                    : 'bg-[#141414] border-[#262626] text-neutral-400 hover:text-white'
                 }`}
+                aria-label="Wishlist"
               >
-                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
-              </button>
+                <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
+              </Button>
 
-              <button
-                type="button"
-                onClick={() => toggleCompare(product)}
-                title={locale === 'ar' ? 'مقارنة المواصفات' : 'Compare product'}
-                className={`p-2.5 rounded-full border shadow-md transition-all ${
+              <Button
+                isIconOnly
+                size="sm"
+                variant="flat"
+                onPress={() => toggleCompare(product)}
+                className={`rounded-full border w-8 h-8 min-w-8 ${
                   isCompared
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-bg-primary/90 border-border-color text-text-muted hover:text-primary hover:border-primary'
+                    ? 'bg-white text-black border-white'
+                    : 'bg-[#141414] border-[#262626] text-neutral-400 hover:text-white'
                 }`}
+                aria-label="Compare"
               >
-                <Repeat className="w-4 h-4" />
-              </button>
+                <Repeat className="w-3.5 h-3.5" />
+              </Button>
 
-              <button
-                type="button"
-                onClick={handleShare}
-                title={locale === 'ar' ? 'مشاركة المنتج' : 'Share'}
-                className="p-2.5 rounded-full bg-bg-primary/90 border border-border-color text-text-muted hover:text-primary shadow-md transition-all relative"
+              <Button
+                isIconOnly
+                size="sm"
+                variant="flat"
+                onPress={handleShare}
+                className="rounded-full bg-[#141414] border border-[#262626] text-neutral-400 hover:text-white w-8 h-8 min-w-8 relative"
+                aria-label="Share"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-3.5 h-3.5" />
                 {shareFeedback && (
-                  <span className="absolute -bottom-7 start-1/2 -translate-x-1/2 bg-neutral-900 text-white text-[10px] px-2 py-0.5 rounded shadow whitespace-nowrap">
+                  <span className="absolute -bottom-7 start-1/2 -translate-x-1/2 bg-white text-black font-mono text-[10px] px-2 py-0.5 rounded shadow whitespace-nowrap">
                     {locale === 'ar' ? 'تم نسخ الرابط' : 'Link copied!'}
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
 
           {/* Thumbnails Carousel */}
           {imagesList.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin">
               {imagesList.map((img, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setSelectedImage(img)}
-                  className={`w-20 h-20 rounded-xl border-2 overflow-hidden flex-shrink-0 p-1.5 transition-all bg-bg-secondary/30 ${
+                  className={`w-18 h-18 rounded-xl border overflow-hidden flex-shrink-0 p-1.5 transition-all bg-[#0a0a0a] cursor-pointer ${
                     selectedImage === img
-                      ? 'border-primary ring-2 ring-primary/20 scale-95'
-                      : 'border-border-color opacity-70 hover:opacity-100 hover:border-text-muted'
+                      ? 'border-white ring-1 ring-white/30'
+                      : 'border-[#262626] opacity-60 hover:opacity-100 hover:border-neutral-500'
                   }`}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img} alt="" className="w-full h-full object-contain" />
                 </button>
               ))}
@@ -286,25 +302,25 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
           {/* Security & Authenticity Guarantee Banner */}
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-3 rounded-xl border border-border-color/80 bg-bg-secondary/20 flex items-center gap-3">
-              <ShieldCheck className="w-6 h-6 text-primary flex-shrink-0" />
+            <div className="p-3 rounded-xl border border-[#262626] bg-[#0a0a0a] flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-white flex-shrink-0" />
               <div>
-                <p className="text-xs font-bold text-text-main">
+                <p className="text-xs font-bold text-white">
                   {locale === 'ar' ? 'ضمان أصلي 100%' : '100% Genuine'}
                 </p>
-                <p className="text-[11px] text-text-muted">
+                <p className="text-[11px] text-neutral-400">
                   {locale === 'ar' ? 'معتمد من الوكيل المباشر' : 'Official certified part'}
                 </p>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl border border-border-color/80 bg-bg-secondary/20 flex items-center gap-3">
-              <RotateCcw className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+            <div className="p-3 rounded-xl border border-[#262626] bg-[#0a0a0a] flex items-center gap-3">
+              <RotateCcw className="w-5 h-5 text-emerald-400 flex-shrink-0" />
               <div>
-                <p className="text-xs font-bold text-text-main">
+                <p className="text-xs font-bold text-white">
                   {locale === 'ar' ? 'إرجاع سهل 14 يوم' : '14-Day Returns'}
                 </p>
-                <p className="text-[11px] text-text-muted">
+                <p className="text-[11px] text-neutral-400">
                   {locale === 'ar' ? 'استرجاع فوري للأموال' : 'Money-back guarantee'}
                 </p>
               </div>
@@ -319,147 +335,148 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
               <div className="flex items-center gap-2">
                 {product.brand && (
-                  <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary font-bold tracking-wide">
+                  <Chip size="sm" variant="flat" className="bg-white text-black font-bold font-mono">
                     {product.brand}
-                  </span>
+                  </Chip>
                 )}
-                <span className="text-text-muted font-mono">SKU: {product.sku}</span>
+                <span className="text-neutral-400 font-mono">SKU: {product.sku}</span>
               </div>
 
               {/* OEM Number with copy button */}
-              <div className="flex items-center gap-1.5 bg-bg-secondary px-2.5 py-1 rounded-lg border border-border-color">
-                <span className="text-text-muted font-medium">OEM:</span>
-                <span className="font-mono font-bold text-text-main">{product.oemNumber}</span>
+              <div className="flex items-center gap-1.5 bg-[#0a0a0a] px-2.5 py-1 rounded-lg border border-[#262626]">
+                <span className="text-neutral-400 font-mono text-[11px]">OEM:</span>
+                <span className="font-mono font-bold text-white text-xs">{product.oemNumber}</span>
                 <button
                   type="button"
                   onClick={handleCopyOem}
-                  className="p-1 text-text-muted hover:text-primary transition-colors"
+                  className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
                   title={locale === 'ar' ? 'نسخ رقم OEM' : 'Copy OEM'}
                 >
-                  {copiedOem ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedOem ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
 
             {/* Product Title */}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
               {product.name}
             </h1>
 
             {/* Rating Stars & Reviews */}
             <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1 text-amber-500">
+              <div className="flex items-center gap-1 text-amber-400">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.floor(product.rating || 5) ? 'fill-current' : 'text-neutral-300'
+                    className={`w-3.5 h-3.5 ${
+                      i < Math.floor(product.rating || 5) ? 'fill-current' : 'text-neutral-600'
                     }`}
                   />
                 ))}
-                <span className="font-bold ms-1 text-text-main text-sm">
+                <span className="font-bold ms-1 text-white font-mono">
                   {product.rating?.toFixed(1) || '4.9'}
                 </span>
               </div>
-              <span className="text-text-muted">•</span>
+              <span className="text-neutral-600">•</span>
               <button
                 type="button"
                 onClick={() => setActiveTab('reviews')}
-                className="text-primary hover:underline font-medium"
+                className="text-neutral-400 hover:text-white underline cursor-pointer"
               >
                 {product.reviewCount || 48} {locale === 'ar' ? 'تقييم موثق من المشترين' : 'verified reviews'}
               </button>
-              <span className="text-text-muted">•</span>
-              <span className="text-text-muted">
+              <span className="text-neutral-600">•</span>
+              <span className="text-neutral-400 font-mono">
                 {locale === 'ar' ? `تم بيع ${product.soldCount || 84} قطعة` : `${product.soldCount || 84} sold`}
               </span>
             </div>
           </div>
 
           {/* Vehicle Fitment Alert Box */}
-          <div className="rounded-xl border p-4 transition-all bg-bg-primary shadow-sm">
+          <Card className="border border-[#262626] p-4 bg-[#0a0a0a] shadow-sm">
             {activeVehicle ? (
               fitmentStatus ? (
-                <div className="flex items-start gap-3 text-emerald-800 bg-emerald-50/70 p-3.5 rounded-lg border border-emerald-200">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 text-emerald-400 bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/20">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <p className="font-bold text-sm text-emerald-950">
+                    <p className="font-bold text-sm text-white">
                       {locale === 'ar' ? 'متوافق تماماً مع سيارتك المحددة' : 'Guaranteed to Fit Your Vehicle'}
                     </p>
-                    <p className="mt-0.5 text-emerald-800">
+                    <p className="mt-0.5 text-neutral-300 font-mono">
                       {activeVehicle.make} {activeVehicle.model} {activeVehicle.year}
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 text-rose-800 bg-rose-50/70 p-3.5 rounded-lg border border-rose-200">
-                  <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 text-rose-400 bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20">
+                  <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <p className="font-bold text-sm text-rose-950">
+                    <p className="font-bold text-sm text-white">
                       {locale === 'ar' ? 'تنبيه: غير متوافق مع سيارتك المحددة' : 'Warning: Does Not Fit Your Vehicle'}
                     </p>
-                    <p className="mt-0.5 text-rose-800">
+                    <p className="mt-0.5 text-neutral-300 font-mono">
                       {activeVehicle.make} {activeVehicle.model} {activeVehicle.year}
                     </p>
                   </div>
                 </div>
               )
             ) : (
-              <div className="flex items-center justify-between gap-4 flex-wrap bg-primary/5 p-3.5 rounded-lg border border-primary/20">
+              <div className="flex items-center justify-between gap-4 flex-wrap bg-[#111111] p-3.5 rounded-xl border border-[#262626]">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                    <Car className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-[#171717] border border-[#262626] flex items-center justify-center text-white flex-shrink-0">
+                    <Car className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-text-main">
+                    <p className="text-xs font-bold text-white">
                       {locale === 'ar' ? 'تأكد من توافق القطعة مع سيارتك' : 'Check vehicle fitment before buying'}
                     </p>
-                    <p className="text-[11px] text-text-muted">
+                    <p className="text-[11px] text-neutral-400">
                       {locale === 'ar' ? 'حدد الماركة والموديل وسنة الصنع' : 'Select your make, model and year'}
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={openGarageModal}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors"
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={openGarageModal}
+                  className="bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors"
                 >
                   {locale === 'ar' ? 'اختر سيارتك' : 'Select Vehicle'}
-                </button>
+                </Button>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Pricing & Stock Progress */}
-          <div className="p-5 rounded-2xl bg-bg-secondary/40 border border-border-color space-y-4">
+          <Card className="p-5 rounded-2xl bg-[#0a0a0a] border border-[#262626] space-y-4 shadow-sm">
             <div className="flex items-baseline gap-3 flex-wrap">
-              <span className="text-3xl sm:text-4xl font-black text-primary tracking-tight">
+              <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight">
                 {formatMoney(product.price, locale)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <>
-                  <span className="text-lg text-text-muted line-through">
+                  <span className="text-base text-neutral-500 line-through font-mono">
                     {formatMoney(product.originalPrice, locale)}
                   </span>
-                  <span className="px-2 py-0.5 text-xs font-bold rounded bg-emerald-100 text-emerald-800">
+                  <Chip size="sm" color="success" variant="flat" className="font-mono text-xs">
                     {locale === 'ar'
                       ? `وفرت ${formatMoney(product.originalPrice - product.price, locale)}`
                       : `Save ${formatMoney(product.originalPrice - product.price, locale)}`}
-                  </span>
+                  </Chip>
                 </>
               )}
             </div>
 
-            <p className="text-xs text-text-muted flex items-center gap-1.5">
-              <BadgeCheck className="w-4 h-4 text-emerald-600" />
+            <p className="text-xs text-neutral-400 flex items-center gap-1.5 font-mono">
+              <BadgeCheck className="w-4 h-4 text-emerald-400" />
               {locale === 'ar' ? 'الأسعار شاملة ضريبة القيمة المضافة 14%' : 'All prices include 14% VAT'}
             </p>
 
             {/* Stock Level Progress Indicator */}
-            <div className="space-y-1.5 pt-2 border-t border-border-color">
+            <div className="space-y-1.5 pt-2 border-t border-[#262626]">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-text-main flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   {product.stockQuantity > 5
                     ? locale === 'ar'
                       ? 'متوفر في المخزن - جاهز للشحن الفوري'
@@ -468,41 +485,41 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     ? `متبقي ${product.stockQuantity} قطع فقط!`
                     : `Only ${product.stockQuantity} left in stock!`}
                 </span>
-                <span className="text-text-muted">
+                <span className="text-neutral-400 font-mono text-[11px]">
                   {product.availableStock || product.stockQuantity} / 50
                 </span>
               </div>
-              <div className="w-full h-2 rounded-full bg-border-color/60 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-primary rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, Math.max(15, ((product.availableStock || 25) / 50) * 100))}%`,
-                  }}
-                />
-              </div>
+              <Progress
+                size="sm"
+                value={Math.min(100, Math.max(15, ((product.availableStock || 25) / 50) * 100))}
+                classNames={{
+                  track: 'bg-[#171717] border border-[#262626]',
+                  indicator: 'bg-white',
+                }}
+              />
             </div>
-          </div>
+          </Card>
 
           {/* Quantity Selector, Add to Cart, Buy Now & WhatsApp */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-3">
               {/* Quantity Selector */}
-              <div className="flex items-center border border-border-color rounded-xl bg-bg-primary overflow-hidden h-12 shadow-sm">
+              <div className="flex items-center border border-[#262626] rounded-xl bg-[#0a0a0a] overflow-hidden h-12 shadow-sm">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3.5 h-full text-text-muted hover:text-text-main hover:bg-bg-secondary transition-colors"
+                  className="px-3.5 h-full text-neutral-400 hover:text-white hover:bg-[#141414] transition-colors cursor-pointer"
                   disabled={quantity <= 1}
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="px-4 font-mono font-bold text-sm min-w-[36px] text-center">
+                <span className="px-4 font-mono font-bold text-sm min-w-[36px] text-center text-white">
                   {quantity}
                 </span>
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.min(product.stockQuantity, q + 1))}
-                  className="px-3.5 h-full text-text-muted hover:text-text-main hover:bg-bg-secondary transition-colors"
+                  className="px-3.5 h-full text-neutral-400 hover:text-white hover:bg-[#141414] transition-colors cursor-pointer"
                   disabled={quantity >= product.stockQuantity}
                 >
                   <Plus className="w-4 h-4" />
@@ -510,27 +527,26 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               </div>
 
               {/* Add to Cart Button */}
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary-hover text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              <Button
+                onPress={handleAddToCart}
+                className="flex-1 h-12 bg-white text-black font-bold text-sm hover:bg-neutral-200 transition-colors shadow-sm"
+                startContent={<ShoppingBag className="w-4 h-4" />}
               >
-                <ShoppingBag className="w-4 h-4" />
                 {t.common.addToCart}
-              </button>
+              </Button>
 
               {/* Buy Now Button */}
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                className="h-12 px-5 rounded-xl bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 hover:bg-neutral-800 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all"
+              <Button
+                onPress={handleBuyNow}
+                variant="flat"
+                className="h-12 px-5 bg-[#171717] hover:bg-[#262626] text-white border border-[#262626] font-bold text-sm transition-all"
+                startContent={<Zap className="w-4 h-4 text-amber-400" />}
               >
-                <Zap className="w-4 h-4 text-amber-400" />
                 {t.common.buyNow}
-              </button>
+              </Button>
             </div>
 
-            {/* Egyptian WhatsApp Direct Ordering Button */}
+            {/* WhatsApp Direct Ordering Button */}
             <a
               href={getWhatsAppLink()}
               target="_blank"
@@ -538,28 +554,28 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
             >
               <Phone className="w-4 h-4" />
-              {locale === 'ar' ? 'طلب فوري ومباشر عبر واتساب' : 'Quick Order via WhatsApp'}
+              <span>{locale === 'ar' ? 'طلب فوري ومباشر عبر واتساب' : 'Quick Order via WhatsApp'}</span>
             </a>
           </div>
 
           {/* Multi-Vendor Seller Information Card */}
           {product.merchant && (
-            <div className="p-4 rounded-xl border border-border-color bg-bg-secondary/20 flex items-center justify-between gap-4 flex-wrap">
+            <Card className="p-4 rounded-xl border border-[#262626] bg-[#0a0a0a] flex flex-row items-center justify-between gap-4 flex-wrap shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary text-base">
+                <div className="w-10 h-10 rounded-xl bg-white text-black font-bold flex items-center justify-center text-sm">
                   {product.merchant.name.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-text-main">
+                    <p className="text-xs font-bold text-white">
                       {product.merchant.storeName || product.merchant.name}
                     </p>
-                    <span className="flex items-center text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
+                    <span className="flex items-center text-[10px] font-bold text-amber-400 font-mono">
                       ★ {product.merchant.rating || 4.8}
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-muted flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3 text-text-muted" />
+                  <p className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3 text-neutral-500" />
                     {product.merchant.addressText}
                   </p>
                 </div>
@@ -567,17 +583,17 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
               <Link
                 href={`/${locale}/shop?vendor=${product.merchant.slug || product.merchant.id}`}
-                className="text-xs font-bold text-primary hover:underline"
+                className="text-xs font-bold text-white hover:underline font-mono"
               >
                 {locale === 'ar' ? 'زيارة متجر التاجر' : 'Visit Store'}
               </Link>
-            </div>
+            </Card>
           )}
 
           {/* Delivery & Payment Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-text-muted pt-2 border-t border-border-color">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-400 pt-2 border-t border-[#262626]">
             <div className="flex items-center gap-2.5">
-              <Truck className="w-4 h-4 text-primary flex-shrink-0" />
+              <Truck className="w-4 h-4 text-white flex-shrink-0" />
               <span>
                 {locale === 'ar'
                   ? 'توصيل فوري خلال 2 إلى 4 ساعات للقاهرة والجيزة'
@@ -585,7 +601,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <BadgeCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <BadgeCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
               <span>
                 {locale === 'ar'
                   ? 'الدفع عند الاستلام، كارت، إنستاباي، أو تقسيط فوري'
@@ -597,284 +613,202 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       </div>
 
       {/* Tabs Navigation Section */}
-      <div className="pt-10 border-t border-border-color space-y-6">
-        <div className="flex items-center gap-2 border-b border-border-color overflow-x-auto scrollbar-thin">
-          <button
-            type="button"
-            onClick={() => setActiveTab('desc')}
-            className={`pb-3.5 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'desc'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted hover:text-text-main'
-            }`}
+      <div className="pt-10 border-t border-[#262626] space-y-6">
+        <Tabs
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(String(key))}
+          variant="underlined"
+          classNames={{
+            tabList: 'border-b border-[#262626] p-0 gap-6',
+            cursor: 'bg-white',
+            tab: 'text-neutral-400 font-semibold text-xs data-[selected=true]:text-white pb-3',
+          }}
+        >
+          <Tab
+            key="desc"
+            title={locale === 'ar' ? 'الوصف ومميزات القطعة' : 'Description & Features'}
           >
-            {locale === 'ar' ? 'الوصف ومميزات القطعة' : 'Description & Features'}
-          </button>
+            <div className="pt-6 prose prose-invert prose-sm max-w-none text-neutral-300 leading-relaxed">
+              {product.description ? (
+                <div
+                  className="rich-content"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              ) : (
+                <p className="text-neutral-500 italic text-sm">
+                  {locale === 'ar' ? 'لا يوجد وصف متاح لهذا المنتج.' : 'No description available for this product.'}
+                </p>
+              )}
+            </div>
+          </Tab>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('specs')}
-            className={`pb-3.5 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'specs'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted hover:text-text-main'
-            }`}
+          <Tab
+            key="specs"
+            title={locale === 'ar' ? 'المواصفات الفنية وأرقام OEM' : 'Technical Specs & OEM'}
           >
-            {locale === 'ar' ? 'المواصفات الفنية وأرقام OEM' : 'Technical Specs & OEM'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('fitment')}
-            className={`pb-3.5 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'fitment'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted hover:text-text-main'
-            }`}
-          >
-            {locale === 'ar'
-              ? `السيارات المتوافقة (${product.compatibilities.length})`
-              : `Fitment List (${product.compatibilities.length})`}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('shipping')}
-            className={`pb-3.5 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'shipping'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted hover:text-text-main'
-            }`}
-          >
-            {locale === 'ar' ? 'الشحن والضمان والاسترجاع' : 'Shipping & Returns'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('reviews')}
-            className={`pb-3.5 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
-              activeTab === 'reviews'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted hover:text-text-main'
-            }`}
-          >
-            {locale === 'ar'
-              ? `تقييمات المشترين (${product.reviewCount || 48})`
-              : `Reviews (${product.reviewCount || 48})`}
-          </button>
-        </div>
-
-        {/* Tab 1: Description */}
-        {activeTab === 'desc' && (
-          <div className="prose prose-sm max-w-none text-text-muted leading-relaxed">
-            {product.description ? (
-              /* RichEditor (Trix) saves HTML — render it safely */
-              <div
-                className="rich-content text-text-main"
-                dangerouslySetInnerHTML={{ __html: product.description }}
-              />
-            ) : (
-              <p className="text-text-muted italic text-sm">
-                {locale === 'ar' ? 'لا يوجد وصف متاح لهذا المنتج.' : 'No description available for this product.'}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Tab 2: Specs & OEM */}
-        {activeTab === 'specs' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'رقم القطعة الأصلي (OEM)' : 'OEM Part Number'}</span>
-                <span className="font-mono font-bold text-text-main text-sm mt-0.5 block">{product.oemNumber}</span>
+            <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono">
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'رقم القطعة الأصلي (OEM)' : 'OEM Part Number'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block">{product.oemNumber}</span>
               </div>
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'كود المخزن (SKU)' : 'SKU'}</span>
-                <span className="font-mono font-bold text-text-main text-sm mt-0.5 block">{product.sku}</span>
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'كود المخزن (SKU)' : 'SKU'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block">{product.sku}</span>
               </div>
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'الوزن الصافي' : 'Weight'}</span>
-                <span className="font-bold text-text-main text-sm mt-0.5 block">{product.weightKg} {locale === 'ar' ? 'كجم' : 'kg'}</span>
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'الوزن الصافي' : 'Weight'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block">{product.weightKg} {locale === 'ar' ? 'كجم' : 'kg'}</span>
               </div>
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'الأبعاد (طول × عرض × ارتفاع)' : 'Dimensions (L × W × H)'}</span>
-                <span className="font-mono font-bold text-text-main text-sm mt-0.5 block">
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'الأبعاد (طول × عرض × ارتفاع)' : 'Dimensions (L × W × H)'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block">
                   {product.dimensionsCm.length} × {product.dimensionsCm.width} × {product.dimensionsCm.height} cm
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'الحالة' : 'Condition'}</span>
-                <span className="font-bold text-text-main text-sm mt-0.5 block capitalize">{product.condition}</span>
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'الحالة' : 'Condition'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block capitalize">{product.condition}</span>
               </div>
-              <div className="p-3.5 rounded-xl border border-border-color bg-bg-secondary/30">
-                <span className="text-text-muted block">{locale === 'ar' ? 'بلد الصنع / الماركة' : 'Brand / Origin'}</span>
-                <span className="font-bold text-text-main text-sm mt-0.5 block">{product.brand || 'Original OEM'}</span>
+              <div className="p-3.5 rounded-xl border border-[#262626] bg-[#0a0a0a]">
+                <span className="text-neutral-500 block text-[11px] font-sans">
+                  {locale === 'ar' ? 'بلد الصنع / الماركة' : 'Brand / Origin'}
+                </span>
+                <span className="font-bold text-white text-sm mt-0.5 block">{product.brand || 'Original OEM'}</span>
               </div>
             </div>
-          </div>
-        )}
+          </Tab>
 
-        {/* Tab 3: Vehicle Compatibility Table */}
-        {activeTab === 'fitment' && (
-          <div className="space-y-4">
-            <p className="text-xs text-text-muted">
-              {locale === 'ar'
-                ? 'تم فحص ومطابقة هذه القطعة وفقاً لقواعد البيانات الفنية لمصنعي السيارات التالية:'
-                : 'This part is fully verified against the technical databases of the following car models:'}
-            </p>
-            <div className="border border-border-color rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-xs text-start">
-                <thead className="bg-bg-secondary text-text-main font-bold border-b border-border-color">
-                  <tr>
-                    <th className="py-3 px-4 text-start">{locale === 'ar' ? 'الماركة' : 'Make'}</th>
-                    <th className="py-3 px-4 text-start">{locale === 'ar' ? 'الموديل' : 'Model'}</th>
-                    <th className="py-3 px-4 text-start">{locale === 'ar' ? 'سنوات الصنع' : 'Years'}</th>
-                    <th className="py-3 px-4 text-start">{locale === 'ar' ? 'حالة التوافق' : 'Fitment Status'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-color">
-                  {product.compatibilities.map((c, i) => (
-                    <tr key={i} className="hover:bg-bg-secondary/40 transition-colors">
-                      <td className="py-3 px-4 font-bold text-text-main">{c.make}</td>
-                      <td className="py-3 px-4">{c.model}</td>
-                      <td className="py-3 px-4 font-mono">{c.yearFrom} - {c.yearTo}</td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          {locale === 'ar' ? 'تطابق تام' : '100% Fit'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Shipping & Returns */}
-        {activeTab === 'shipping' && (
-          <div className="space-y-4 text-xs text-text-muted leading-relaxed">
-            <div className="p-4 rounded-xl border border-border-color bg-bg-secondary/20 space-y-2">
-              <h4 className="font-bold text-text-main text-sm flex items-center gap-2">
-                <Truck className="w-4 h-4 text-primary" />
-                {locale === 'ar' ? 'مواعيد وطرق التوصيل في مصر' : 'Delivery Times & Coverage'}
-              </h4>
-              <p>
+          <Tab
+            key="fitment"
+            title={`${locale === 'ar' ? 'السيارات المتوافقة' : 'Fitment List'} (${product.compatibilities.length})`}
+          >
+            <div className="pt-6 space-y-4">
+              <p className="text-xs text-neutral-400">
                 {locale === 'ar'
-                  ? 'يتم تسليم الطلبات داخل القاهرة الكبرى والجيزة خلال ساعتين إلى 4 ساعات عبر كباتن التوصيل السريع. للمحافظات الأخرى، يصل الطلب خلال 24 إلى 48 ساعة كحد أقصى.'
-                  : 'Orders within Greater Cairo and Giza are delivered in 2-4 hours. Other Egyptian governorates within 24-48 hours.'}
+                  ? 'تم فحص ومطابقة هذه القطعة وفقاً لقواعد البيانات الفنية لمصنعي السيارات التالية:'
+                  : 'This part is fully verified against the technical databases of the following car models:'}
               </p>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border-color bg-bg-secondary/20 space-y-2">
-              <h4 className="font-bold text-text-main text-sm flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-emerald-600" />
-                {locale === 'ar' ? 'سياسة الاستبدال والاسترجاع' : 'Return & Refund Policy'}
-              </h4>
-              <p>
-                {locale === 'ar'
-                  ? 'يحق للعميل إرجاع أو استبدال القطعة خلال 14 يوماً من تاريخ الاستلام بشرط أن تكون في حالتها وعبوتها الأصلية غير مستخدمة، مع إمكانية المعاينة قبل الاستلام ودفع الحساب.'
-                  : 'You have 14 days to return or replace the item provided it is in original packaging and uninstalled.'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 5: Reviews */}
-        {activeTab === 'reviews' && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-xl border border-border-color bg-bg-secondary/30 flex items-center justify-between gap-6 flex-wrap">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl font-black text-text-main">
-                  {product.rating?.toFixed(1) || '4.9'}
-                </div>
-                <div>
-                  <div className="flex items-center text-amber-500">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-text-muted mt-1">
-                    {locale === 'ar' ? 'بناءً على 48 مشتري موثق' : 'Based on 48 verified buyers'}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors"
+              <Table
+                aria-label="Fitment List"
+                classNames={{
+                  base: 'border border-[#262626] rounded-xl overflow-hidden',
+                  th: 'bg-[#111111] text-white font-bold text-xs',
+                  td: 'text-xs text-neutral-300 border-b border-[#262626]',
+                }}
               >
-                {locale === 'ar' ? 'أضف تقييمك وتجربتك' : 'Write a Review'}
-              </button>
-            </div>
-
-            {/* Mock Reviews List */}
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-border-color bg-bg-primary space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-text-main">م. طارق عبد الرحمن</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      {locale === 'ar' ? 'مشتري موثق' : 'Verified Buyer'}
-                    </span>
-                  </div>
-                  <span className="text-text-muted">منذ أسبوع</span>
-                </div>
-                <div className="flex text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                <TableHeader>
+                  <TableColumn>{locale === 'ar' ? 'الماركة' : 'Make'}</TableColumn>
+                  <TableColumn>{locale === 'ar' ? 'الموديل' : 'Model'}</TableColumn>
+                  <TableColumn>{locale === 'ar' ? 'سنوات الصنع' : 'Years'}</TableColumn>
+                  <TableColumn>{locale === 'ar' ? 'حالة التوافق' : 'Fitment Status'}</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {product.compatibilities.map((c, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-bold text-white">{c.make}</TableCell>
+                      <TableCell>{c.model}</TableCell>
+                      <TableCell className="font-mono">{c.yearFrom} - {c.yearTo}</TableCell>
+                      <TableCell>
+                        <Chip size="sm" color="success" variant="flat" className="font-mono text-[10px]">
+                          {locale === 'ar' ? 'تطابق تام 100%' : '100% Fit'}
+                        </Chip>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </div>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  {locale === 'ar'
-                    ? 'القطعة ممتازة ومطابقة للمواصفات، والفرامل أصبحت ناعمة جداً وبدون أي صوت. التوصيل كان سريع جداً واستلمت في نفس اليوم.'
-                    : 'Excellent genuine part, braking is smooth and noiseless. Delivery was on the same day.'}
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl border border-border-color bg-bg-primary space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-text-main">كريم حسني</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      {locale === 'ar' ? 'مشتري موثق' : 'Verified Buyer'}
-                    </span>
-                  </div>
-                  <span className="text-text-muted">منذ أسبوعين</span>
-                </div>
-                <div className="flex text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                  ))}
-                </div>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  {locale === 'ar'
-                    ? 'تغليف سليم وكرتونة أصلية برقم الباركود ورقم الـ OEM مطابق للقطعة القديمة التي فككتها من السيارة. شكراً على المصداقية.'
-                    : 'Original box with barcode and OEM matching my old part exactly. Highly recommended.'}
-                </p>
-              </div>
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        )}
+          </Tab>
+
+          <Tab
+            key="shipping"
+            title={locale === 'ar' ? 'الشحن والضمان والاسترجاع' : 'Shipping & Returns'}
+          >
+            <div className="pt-6 space-y-4 text-xs text-neutral-300 leading-relaxed">
+              <Card className="p-4 rounded-xl border border-[#262626] bg-[#0a0a0a] space-y-2">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-white" />
+                  {locale === 'ar' ? 'مواعيد وطرق التوصيل في مصر' : 'Delivery Times & Coverage'}
+                </h4>
+                <p className="text-neutral-400">
+                  {locale === 'ar'
+                    ? 'يتم تسليم الطلبات داخل القاهرة الكبرى والجيزة خلال ساعتين إلى 4 ساعات عبر كباتن التوصيل السريع. للمحافظات الأخرى، يصل الطلب خلال 24 إلى 48 ساعة كحد أقصى.'
+                    : 'Orders within Greater Cairo and Giza are delivered in 2-4 hours. Other Egyptian governorates within 24-48 hours.'}
+                </p>
+              </Card>
+
+              <Card className="p-4 rounded-xl border border-[#262626] bg-[#0a0a0a] space-y-2">
+                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 text-emerald-400" />
+                  {locale === 'ar' ? 'سياسة الاستبدال والاسترجاع' : 'Return & Refund Policy'}
+                </h4>
+                <p className="text-neutral-400">
+                  {locale === 'ar'
+                    ? 'يحق للعميل إرجاع أو استبدال القطعة خلال 14 يوماً من تاريخ الاستلام بشرط أن تكون في حالتها وعبوتها الأصلية غير مستخدمة، مع إمكانية المعاينة قبل الاستلام ودفع الحساب.'
+                    : 'You have 14 days to return or replace the item provided it is in original packaging and uninstalled.'}
+                </p>
+              </Card>
+            </div>
+          </Tab>
+
+          <Tab
+            key="reviews"
+            title={`${locale === 'ar' ? 'تقييمات المشترين' : 'Reviews'} (${product.reviewCount || 48})`}
+          >
+            <div className="pt-6 space-y-6">
+              <Card className="p-5 rounded-xl border border-[#262626] bg-[#0a0a0a] flex flex-row items-center justify-between gap-6 flex-wrap shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl font-black text-white font-mono">
+                    {product.rating?.toFixed(1) || '4.9'}
+                  </div>
+                  <div>
+                    <div className="flex items-center text-amber-400">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-current" />
+                      ))}
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-1 font-mono">
+                      {locale === 'ar' ? 'بناءً على 48 مشتري موثق' : 'Based on 48 verified buyers'}
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  className="bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors"
+                >
+                  {locale === 'ar' ? 'أضف تقييمك وتجربتك' : 'Write a Review'}
+                </Button>
+              </Card>
+            </div>
+          </Tab>
+        </Tabs>
       </div>
 
       {/* Related Products Carousel / Grid */}
       {relatedProducts.length > 0 && (
-        <div className="pt-12 border-t border-border-color space-y-6">
+        <div className="pt-12 border-t border-[#262626] space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-extrabold text-text-main">
+              <h3 className="text-xl font-bold text-white tracking-tight">
                 {locale === 'ar' ? 'قطع غيار يشتريها العملاء أيضاً' : 'Related & Recommended Parts'}
               </h3>
-              <p className="text-xs text-text-muted mt-0.5">
+              <p className="text-xs text-neutral-400 mt-0.5">
                 {locale === 'ar' ? 'قطع متوافقة ومكملة لهذه المنظومة' : 'Frequently bought together'}
               </p>
             </div>
             <Link
               href={`/${locale}/shop?category=${product.categorySlug || 'brakes'}`}
-              className="text-xs font-bold text-primary hover:underline"
+              className="text-xs font-bold text-white hover:underline font-mono"
             >
               {locale === 'ar' ? 'عرض المزيد' : 'View more'}
             </Link>
@@ -890,23 +824,24 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
       {/* Sticky Bottom Add To Cart Bar */}
       {showStickyBar && (
-        <div className="fixed bottom-0 start-0 end-0 z-40 bg-bg-primary/95 backdrop-blur-md border-t border-border-color shadow-2xl py-3 px-4 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-0 start-0 end-0 z-40 bg-black/90 backdrop-blur-md border-t border-[#262626] shadow-2xl py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={product.thumbnail}
                 alt=""
-                className="w-12 h-12 rounded-lg object-contain bg-bg-secondary p-1 border border-border-color flex-shrink-0"
+                className="w-12 h-12 rounded-lg object-contain bg-[#111111] p-1 border border-[#262626] flex-shrink-0"
               />
               <div className="min-w-0">
-                <h4 className="text-xs font-bold text-text-main truncate max-w-[200px] sm:max-w-sm">
+                <h4 className="text-xs font-bold text-white truncate max-w-[200px] sm:max-w-sm">
                   {product.name}
                 </h4>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm font-extrabold text-primary">
+                  <span className="text-sm font-bold text-white font-mono">
                     {formatMoney(product.price, locale)}
                   </span>
-                  <span className="text-[10px] text-text-muted font-mono hidden sm:inline">
+                  <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">
                     OEM: {product.oemNumber}
                   </span>
                 </div>
@@ -914,32 +849,13 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="hidden sm:flex items-center border border-border-color rounded-lg bg-bg-secondary h-9">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-2 text-text-muted hover:text-text-main"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="px-2 font-mono font-bold text-xs">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.min(product.stockQuantity, q + 1))}
-                  className="px-2 text-text-muted hover:text-text-main"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="h-10 px-4 sm:px-6 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all"
+              <Button
+                onPress={handleAddToCart}
+                className="h-10 px-4 sm:px-6 bg-white text-black text-xs font-bold hover:bg-neutral-200 transition-all shadow-sm"
+                startContent={<ShoppingBag className="w-3.5 h-3.5" />}
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
                 <span>{t.common.addToCart}</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
