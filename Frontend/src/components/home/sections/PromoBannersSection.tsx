@@ -1,82 +1,97 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Wrench, Shield, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Locale } from '@/lib/api/types';
+import { Button, Chip } from '@heroui/react';
 
 interface PromoBannersProps {
   locale: Locale;
 }
 
 export const PromoBannersSection: React.FC<PromoBannersProps> = ({ locale }) => {
+  const isAr = locale === 'ar';
+  const [banners, setBanners] = useState<any[]>([]);
+
+  // Fetch real promo banners from Filament CMS (/api/cms/banners)
+  useEffect(() => {
+    async function loadPromoBanners() {
+      try {
+        const res = await fetch('/api/cms/banners');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && Array.isArray(json.data)) {
+            // Filter banners designated for promo strip
+            const promos = json.data.filter((b: any) => b.position === 'promo_strip' || b.position === 'middle_banner');
+            setBanners(promos);
+          }
+        }
+      } catch {
+        setBanners([]);
+      }
+    }
+    loadPromoBanners();
+  }, []);
+
+  if (banners.length === 0) {
+    // Zero hardcoded banners — return null if none published in Filament CMS
+    return null;
+  }
+
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Banner 1: Engine Filters & Oil */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 p-6 sm:p-8 text-white shadow-lg flex flex-col justify-between group">
-        <div className="space-y-3 z-10 max-w-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-1 rounded-md">
-            {locale === 'ar' ? 'باقات الصيانة الدورية' : 'Regular Maintenance'}
-          </span>
-          <h4 className="text-xl sm:text-2xl font-black leading-tight">
-            {locale === 'ar' ? 'فلاتر وسوائل المحرك الأصلية' : 'Genuine Engine Filters & Fluids'}
-          </h4>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {locale === 'ar'
-              ? 'احمِ محرك سيارتك بأفضل أنواع الزيوت والفلاتر من MANN و Bosch مع توصيل فوري.'
-              : 'Protect your engine with premium oil and air filters from trusted brands.'}
-          </p>
-        </div>
+    <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      {banners.slice(0, 2).map((banner) => {
+        const title = isAr ? banner.title_ar : (banner.title_en || banner.title_ar);
+        const subtitle = isAr ? banner.subtitle_ar : (banner.subtitle_en || banner.subtitle_ar);
+        const ctaText = isAr ? (banner.cta_text_ar || 'تسوق الآن') : (banner.cta_text_en || 'Shop Now');
+        const ctaUrl = banner.cta_url || '/shop';
+        const imageUrl = banner.image
+          ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/storage/${banner.image}`
+          : null;
 
-        <div className="pt-6 z-10">
-          <Link
-            href={`/${locale}/shop?category=engine`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-primary hover:text-white text-xs font-bold transition-all shadow-md group-hover:scale-105"
+        return (
+          <div
+            key={banner.id}
+            className="relative rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800 p-6 sm:p-8 text-white flex flex-col justify-between group"
           >
-            <span>{locale === 'ar' ? 'تسوق فلاتر المحرك' : 'Shop Filters'}</span>
-            <ArrowRight className="w-3.5 h-3.5 rtl-mirror" />
-          </Link>
-        </div>
+            <div className="space-y-3 z-10 max-w-sm">
+              {banner.badge_text && (
+                <Chip size="sm" variant="flat" className="bg-neutral-900 text-neutral-300 font-bold text-[10px] uppercase">
+                  {banner.badge_text}
+                </Chip>
+              )}
+              <h4 className="text-xl sm:text-2xl font-black leading-tight text-white">
+                {title}
+              </h4>
+              {subtitle && (
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  {subtitle}
+                </p>
+              )}
+            </div>
 
-        {/* Decorative Graphic */}
-        <div className="absolute end-4 bottom-4 w-32 h-32 opacity-20 group-hover:opacity-30 transition-opacity">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/products/oil-filter.svg" alt="Oil filter banner" className="w-full h-full object-contain" />
-        </div>
-      </div>
+            <div className="pt-6 z-10">
+              <Button
+                as={Link}
+                href={ctaUrl}
+                size="sm"
+                className="bg-white text-black font-bold text-xs hover:bg-neutral-200"
+                endContent={<ArrowRight className="w-3.5 h-3.5 rtl-mirror" />}
+              >
+                {ctaText}
+              </Button>
+            </div>
 
-      {/* Banner 2: Suspension & Steering */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-950 via-slate-900 to-slate-900 border border-slate-800 p-6 sm:p-8 text-white shadow-lg flex flex-col justify-between group">
-        <div className="space-y-3 z-10 max-w-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-danger bg-danger/10 px-2.5 py-1 rounded-md">
-            {locale === 'ar' ? 'عفشة ومساعدين معتمدة' : 'Certified Suspension'}
-          </span>
-          <h4 className="text-xl sm:text-2xl font-black leading-tight">
-            {locale === 'ar' ? 'مساعدين ومقصات وعلب دركسيون' : 'Shock Absorbers & Steering Racks'}
-          </h4>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {locale === 'ar'
-              ? 'ثبات وتحكم فائق على المطبات والمنحنيات مع ضمان استبدال فوري 14 يوماً.'
-              : 'Superior stability and road control designed specifically for Egyptian roads.'}
-          </p>
-        </div>
-
-        <div className="pt-6 z-10">
-          <Link
-            href={`/${locale}/shop?category=suspension`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-md group-hover:scale-105"
-          >
-            <span>{locale === 'ar' ? 'تصفح قطع العفشة' : 'Browse Suspension'}</span>
-            <ArrowRight className="w-3.5 h-3.5 rtl-mirror" />
-          </Link>
-        </div>
-
-        {/* Decorative Graphic */}
-        <div className="absolute end-4 bottom-4 w-32 h-32 opacity-20 group-hover:opacity-30 transition-opacity">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/products/shock-absorber.svg" alt="Suspension banner" className="w-full h-full object-contain" />
-        </div>
-      </div>
+            {imageUrl && (
+              <div className="absolute end-4 bottom-4 w-32 h-32 opacity-20 group-hover:opacity-30 transition-opacity">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt={title} className="w-full h-full object-contain" />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 };
