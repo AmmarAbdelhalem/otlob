@@ -4,6 +4,20 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  Card,
+  CardHeader,
+  CardBody,
+  Button,
+  Input,
+  Textarea,
+  Select,
+  SelectItem,
+  RadioGroup,
+  Radio,
+  Chip,
+  Divider,
+} from '@heroui/react';
+import {
   ShieldCheck,
   Truck,
   CreditCard,
@@ -16,13 +30,11 @@ import {
   Clock,
   ArrowRight,
   ArrowLeft,
-  CheckCircle2,
   Lock,
 } from 'lucide-react';
 import { Locale, PaymentType } from '@/lib/api/types';
 import { useCartStore } from '@/stores/useCartStore';
 import { formatMoney, getMessages } from '@/lib/i18n';
-import { services } from '@/lib/api';
 
 interface CheckoutViewProps {
   locale: Locale;
@@ -49,7 +61,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
   const [selectedGov, setSelectedGov] = useState('cairo');
   const [addressLine, setAddressLine] = useState('');
   const [workshopName, setWorkshopName] = useState('');
-  const [notes, setNotes] = useState('');
   const [paymentType, setPaymentType] = useState<PaymentType>('cod');
 
   // Interactive Map Preset State
@@ -94,17 +105,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
     }
 
     if (!addressLine.trim()) {
-      setErrorMessage(locale === 'ar' ? 'يرجى كتابة عنوان التوصيل بالتفصيل' : 'Please provide detailed delivery address');
+      setErrorMessage(
+        locale === 'ar'
+          ? 'يرجى كتابة عنوان التوصيل بالتفصيل'
+          : 'Please provide detailed delivery address'
+      );
       return;
     }
 
     try {
       setLoading(true);
-
-      const items = cart.items.map((it) => ({
-        productId: it.productId,
-        quantity: it.quantity,
-      }));
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -135,17 +145,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
         );
       }
 
-      // Clear the local cart
       clearCart();
-
       const orderCode = result.data?.order_code || result.data?.orderCode;
-
-      // Navigate to tracking
       router.push(`/${locale}/order-tracking?code=${orderCode}`);
     } catch (err: any) {
       setErrorMessage(
         err.message ||
-          (locale === 'ar' ? 'حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.' : 'Error placing order. Please retry.')
+          (locale === 'ar'
+            ? 'حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.'
+            : 'Error placing order. Please retry.')
       );
     } finally {
       setLoading(false);
@@ -154,16 +162,17 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
 
   if (cart.items.length === 0) {
     return (
-      <div className="py-16 text-center space-y-4 max-w-md mx-auto">
-        <h2 className="text-xl font-bold text-text-main">
+      <div className="py-24 text-center space-y-4 max-w-md mx-auto">
+        <h2 className="text-xl font-bold text-white">
           {locale === 'ar' ? 'لا توجد عناصر في السلة لإتمام الشراء' : 'No items in cart to checkout'}
         </h2>
-        <Link
+        <Button
+          as={Link}
           href={`/${locale}/shop`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover"
+          className="bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors"
         >
           {locale === 'ar' ? 'العودة للمتجر' : 'Return to Shop'}
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -172,160 +181,171 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
     <div className="space-y-8">
       {/* Breadcrumb & Header */}
       <div className="space-y-2">
-        <nav className="flex items-center gap-2 text-xs text-text-muted">
-          <Link href={`/${locale}`} className="hover:text-primary transition-colors">
+        <nav className="flex items-center gap-2 text-xs text-neutral-400 font-mono">
+          <Link href={`/${locale}`} className="hover:text-white transition-colors">
             {locale === 'ar' ? 'الرئيسية' : 'Home'}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
-          <Link href={`/${locale}/cart`} className="hover:text-primary transition-colors">
+          <Link href={`/${locale}/cart`} className="hover:text-white transition-colors">
             {t.nav.cart}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
-          <span className="text-text-main font-medium">
+          <span className="text-white font-medium">
             {locale === 'ar' ? 'إتمام الشراء وتأكيد الطلب' : 'Checkout'}
           </span>
         </nav>
-        <h1 className="text-2xl sm:text-3xl font-black text-text-main">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           {locale === 'ar' ? 'إتمام الطلب وتفاصيل التوصيل' : 'Checkout & Delivery Details'}
         </h1>
       </div>
 
       <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Form: Delivery Address, Contact Info & Payment (7 cols) */}
-        <div className="lg:col-span-7 space-y-8">
-          {/* Section 1: Customer & Workshop Contact Information */}
-          <div className="p-6 rounded-2xl border border-border-color bg-bg-primary space-y-5 shadow-sm">
-            <h2 className="text-base font-bold text-text-main flex items-center gap-2 border-b border-border-color pb-3">
-              <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center">
+        <div className="lg:col-span-7 space-y-6">
+          {/* Section 1: Customer Contact Information */}
+          <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-5">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#262626] pb-3">
+              <span className="w-6 h-6 rounded-full bg-white text-black text-xs font-black flex items-center justify-center font-mono">
                 1
               </span>
               <span>{locale === 'ar' ? 'بيانات المستلم والاتصال' : 'Recipient & Contact Info'}</span>
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="font-bold text-text-main block">
-                  {locale === 'ar' ? 'الاسم بالكامل *' : 'Full Name *'}
-                </label>
-                <input
-                  type="text"
-                  required
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <Input
+                  label={locale === 'ar' ? 'الاسم بالكامل' : 'Full Name'}
+                  isRequired
+                  size="sm"
+                  variant="bordered"
                   placeholder={locale === 'ar' ? 'مثال: محمد أحمد إبراهيم' : 'e.g. Mohamed Ahmed Ibrahim'}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 focus:outline-none focus:border-primary text-xs"
+                  classNames={{
+                    inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    label: 'text-neutral-400 font-medium text-xs',
+                    input: 'text-xs text-white',
+                  }}
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-bold text-text-main block">
-                  {locale === 'ar' ? 'رقم الهاتف المحمول (مصر) *' : 'Egyptian Mobile Number *'}
-                </label>
-                <input
-                  type="tel"
-                  required
+              <div>
+                <Input
+                  label={locale === 'ar' ? 'رقم الهاتف المحمول' : 'Mobile Number'}
+                  isRequired
+                  size="sm"
+                  variant="bordered"
                   placeholder="01012345678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 font-mono focus:outline-none focus:border-primary text-xs text-start"
+                  description={locale === 'ar' ? 'مطلوب 11 رقم للتحقق وتتبع المندوب' : '11-digit mobile required'}
+                  classNames={{
+                    inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    label: 'text-neutral-400 font-medium text-xs',
+                    input: 'text-xs font-mono text-white',
+                  }}
                   dir="ltr"
                 />
-                <span className="text-[10px] text-text-muted">
-                  {locale === 'ar' ? 'سنرسل كود التحقق وموقع المندوب عبر هذا الرقم' : 'We will send OTP and tracking via this number'}
-                </span>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-bold text-text-main block">
-                  {locale === 'ar' ? 'رقم هاتف إضافي / واتساب (اختياري)' : 'Secondary / WhatsApp Phone (Optional)'}
-                </label>
-                <input
-                  type="tel"
+              <div>
+                <Input
+                  label={locale === 'ar' ? 'رقم هاتف إضافي / واتساب' : 'Secondary Phone (Optional)'}
+                  size="sm"
+                  variant="bordered"
                   placeholder="01187654321"
                   value={altPhone}
                   onChange={(e) => setAltPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 font-mono focus:outline-none focus:border-primary text-xs text-start"
+                  classNames={{
+                    inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    label: 'text-neutral-400 font-medium text-xs',
+                    input: 'text-xs font-mono text-white',
+                  }}
                   dir="ltr"
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Section 2: Delivery Location & GPS Pin Simulation */}
-          <div className="p-6 rounded-2xl border border-border-color bg-bg-primary space-y-5 shadow-sm">
-            <h2 className="text-base font-bold text-text-main flex items-center gap-2 border-b border-border-color pb-3">
-              <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center">
+          <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-5">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#262626] pb-3">
+              <span className="w-6 h-6 rounded-full bg-white text-black text-xs font-black flex items-center justify-center font-mono">
                 2
               </span>
               <span>{locale === 'ar' ? 'عنوان التوصيل أو الورشة' : 'Delivery Address & Location'}</span>
             </h2>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-text-main block">
-                    {locale === 'ar' ? 'المحافظة *' : 'Governorate *'}
-                  </label>
-                  <select
-                    value={selectedGov}
-                    onChange={(e) => handleGovChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 focus:outline-none focus:border-primary text-xs"
-                  >
-                    {EGYPTIAN_GOVERNORATES.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {locale === 'ar' ? g.nameAr : g.nameEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label={locale === 'ar' ? 'المحافظة' : 'Governorate'}
+                  selectedKeys={[selectedGov]}
+                  onChange={(e) => handleGovChange(e.target.value)}
+                  size="sm"
+                  variant="bordered"
+                  classNames={{
+                    trigger: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    popoverContent: 'bg-[#0a0a0a] border border-[#262626]',
+                    label: 'text-neutral-400 font-medium text-xs',
+                  }}
+                >
+                  {EGYPTIAN_GOVERNORATES.map((g) => (
+                    <SelectItem key={g.id} textValue={locale === 'ar' ? g.nameAr : g.nameEn} className="text-white hover:bg-[#1f1f1f]">
+                      {locale === 'ar' ? g.nameAr : g.nameEn}
+                    </SelectItem>
+                  ))}
+                </Select>
 
-                <div className="space-y-1.5">
-                  <label className="font-bold text-text-main block">
-                    {locale === 'ar' ? 'اسم الورشة أو مركز الخدمة (اختياري)' : 'Workshop / Service Center Name (Optional)'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={locale === 'ar' ? 'مثال: ورشة الأمل للميكانيكا' : 'e.g. Al-Amal Auto Care'}
-                    value={workshopName}
-                    onChange={(e) => setWorkshopName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 focus:outline-none focus:border-primary text-xs"
-                  >
-                  </input>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-text-main block">
-                  {locale === 'ar' ? 'العنوان بالتفصيل مع أقرب علامة مميزة *' : 'Detailed Address & Nearby Landmark *'}
-                </label>
-                <textarea
-                  required
-                  rows={2}
-                  placeholder={
-                    locale === 'ar'
-                      ? 'مثال: شارع التحرير، عمارة 18 الدور الأرضي، بجوار صيدلية العزبي ومحطة مترو الدقي'
-                      : 'e.g. 18 Tahrir St, Ground floor, next to El-Ezaby Pharmacy, Dokki'
-                  }
-                  value={addressLine}
-                  onChange={(e) => setAddressLine(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 focus:outline-none focus:border-primary text-xs"
+                <Input
+                  label={locale === 'ar' ? 'اسم الورشة أو مركز الخدمة' : 'Workshop Name (Optional)'}
+                  size="sm"
+                  variant="bordered"
+                  placeholder={locale === 'ar' ? 'مثال: ورشة الأمل للميكانيكا' : 'e.g. Al-Amal Auto Care'}
+                  value={workshopName}
+                  onChange={(e) => setWorkshopName(e.target.value)}
+                  classNames={{
+                    inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    label: 'text-neutral-400 font-medium text-xs',
+                    input: 'text-xs text-white',
+                  }}
                 />
               </div>
 
+              <Textarea
+                label={locale === 'ar' ? 'العنوان بالتفصيل مع أقرب علامة مميزة' : 'Detailed Address & Landmark'}
+                isRequired
+                rows={2}
+                size="sm"
+                variant="bordered"
+                placeholder={
+                  locale === 'ar'
+                    ? 'مثال: شارع التحرير، عمارة 18 الدور الأرضي، بجوار صيدلية العزبي'
+                    : 'e.g. 18 Tahrir St, Ground floor, next to El-Ezaby Pharmacy'
+                }
+                value={addressLine}
+                onChange={(e) => setAddressLine(e.target.value)}
+                classNames={{
+                  inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                  label: 'text-neutral-400 font-medium text-xs',
+                  input: 'text-xs text-white',
+                }}
+              />
+
               {/* GPS Coordinates Simulation Pin */}
-              <div className="p-3.5 rounded-xl bg-bg-secondary/40 border border-border-color space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-text-main flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-emerald-600" />
+              <div className="p-3.5 rounded-xl bg-[#111111] border border-[#262626] space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-emerald-400" />
                     {locale === 'ar' ? 'إحداثيات موقع التسليم (GPS):' : 'Delivery GPS Coordinates:'}
                   </span>
-                  <span className="font-mono text-text-muted text-[11px]">
+                  <span className="font-mono text-neutral-400 text-[11px]">
                     {currentCoords.lat.toFixed(4)}, {currentCoords.lng.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex gap-2 flex-wrap text-[11px]">
-                  <span className="text-text-muted self-center">
-                    {locale === 'ar' ? 'تحديد سريع للمنطقة:' : 'Quick Select:'}
+                  <span className="text-neutral-500 self-center">
+                    {locale === 'ar' ? 'تحديد سريع:' : 'Quick Select:'}
                   </span>
                   {[
                     { label: 'وسط البلد', lat: 30.0444, lng: 31.2357 },
@@ -338,7 +358,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
                       key={idx}
                       type="button"
                       onClick={() => setCurrentCoords({ lat: p.lat, lng: p.lng })}
-                      className="px-2.5 py-1 rounded-lg border border-border-color bg-bg-primary hover:border-primary text-text-main font-medium transition-colors"
+                      className="px-2.5 py-1 rounded-lg border border-[#262626] bg-[#0a0a0a] hover:border-neutral-500 text-neutral-300 font-medium transition-colors"
                     >
                       {p.label}
                     </button>
@@ -346,176 +366,161 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Section 3: Payment Method Selection */}
-          <div className="p-6 rounded-2xl border border-border-color bg-bg-primary space-y-5 shadow-sm">
-            <h2 className="text-base font-bold text-text-main flex items-center gap-2 border-b border-border-color pb-3">
-              <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-black flex items-center justify-center">
+          <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-4">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#262626] pb-3">
+              <span className="w-6 h-6 rounded-full bg-white text-black text-xs font-black flex items-center justify-center font-mono">
                 3
               </span>
               <span>{locale === 'ar' ? 'طريقة الدفع' : 'Payment Method'}</span>
             </h2>
 
-            <div className="space-y-3">
+            <RadioGroup
+              value={paymentType}
+              onValueChange={(val) => setPaymentType(val as PaymentType)}
+              classNames={{ wrapper: 'gap-3' }}
+            >
               {/* Option 1: Cash on Delivery */}
-              <label
-                className={`flex items-start gap-3.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  paymentType === 'cod'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border-color bg-bg-secondary/20 hover:border-text-muted'
-                }`}
+              <Radio
+                value="cod"
+                classNames={{
+                  base: `flex m-0 bg-[#111111] hover:bg-[#161616] items-center justify-between cursor-pointer rounded-xl gap-4 p-4 border border-[#262626] data-[selected=true]:border-white max-w-full`,
+                  label: 'w-full',
+                }}
               >
-                <input
-                  type="radio"
-                  name="paymentType"
-                  value="cod"
-                  checked={paymentType === 'cod'}
-                  onChange={() => setPaymentType('cod')}
-                  className="mt-1 text-primary focus:ring-primary"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Banknote className="w-5 h-5 text-emerald-600" />
-                    <span className="font-bold text-xs text-text-main">
-                      {locale === 'ar' ? 'الدفع نقداً عند الاستلام (COD)' : 'Cash on Delivery (COD)'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      {locale === 'ar' ? 'الأكثر شيوعاً' : 'Popular'}
-                    </span>
+                <div className="w-full flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Banknote className="w-4 h-4 text-emerald-400" />
+                      <span className="font-bold text-xs text-white">
+                        {locale === 'ar' ? 'الدفع نقداً عند الاستلام (COD)' : 'Cash on Delivery (COD)'}
+                      </span>
+                      <Chip size="sm" variant="flat" color="success" className="text-[10px] h-5">
+                        {locale === 'ar' ? 'الأكثر شيوعاً' : 'Popular'}
+                      </Chip>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {locale === 'ar'
+                        ? 'ادفع نقداً لمندوب الشحن بعد معاينة وتفقد القطع في يدك.'
+                        : 'Pay cash to the courier upon delivery and parts inspection.'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-text-muted">
-                    {locale === 'ar'
-                      ? 'ادفع نقداً لمندوب الشحن بعد معاينة القطع في يدك والتأكد من مطابقة أرقام الـ OEM.'
-                      : 'Pay cash to the courier upon delivery and parts inspection.'}
-                  </p>
                 </div>
-              </label>
+              </Radio>
 
               {/* Option 2: Credit / Debit Card */}
-              <label
-                className={`flex items-start gap-3.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  paymentType === 'card'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border-color bg-bg-secondary/20 hover:border-text-muted'
-                }`}
+              <Radio
+                value="card"
+                classNames={{
+                  base: `flex m-0 bg-[#111111] hover:bg-[#161616] items-center justify-between cursor-pointer rounded-xl gap-4 p-4 border border-[#262626] data-[selected=true]:border-white max-w-full`,
+                  label: 'w-full',
+                }}
               >
-                <input
-                  type="radio"
-                  name="paymentType"
-                  value="card"
-                  checked={paymentType === 'card'}
-                  onChange={() => setPaymentType('card')}
-                  className="mt-1 text-primary focus:ring-primary"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-primary" />
-                    <span className="font-bold text-xs text-text-main">
-                      {locale === 'ar' ? 'بطاقة بنكية (فيزا / ماستركارد / ميزة)' : 'Credit / Debit Card (Visa, MC, Meeza)'}
-                    </span>
+                <div className="w-full flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-white" />
+                      <span className="font-bold text-xs text-white">
+                        {locale === 'ar' ? 'بطاقة بنكية (فيزا / ماستركارد / ميزة)' : 'Credit / Debit Card (Visa, MC, Meeza)'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {locale === 'ar'
+                        ? 'دفع إلكتروني آمن 100% مشفر بالكامل عبر البنك المركزي المصري.'
+                        : 'Secure online payment with 3D Secure verification.'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-text-muted">
-                    {locale === 'ar'
-                      ? 'دفع إلكتروني آمن 100% مشفر بالكامل عبر البنك المركزي المصري.'
-                      : 'Secure online payment with 3D Secure verification.'}
-                  </p>
                 </div>
-              </label>
+              </Radio>
 
               {/* Option 3: Digital Wallet / Instapay */}
-              <label
-                className={`flex items-start gap-3.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  paymentType === 'wallet'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border-color bg-bg-secondary/20 hover:border-text-muted'
-                }`}
+              <Radio
+                value="wallet"
+                classNames={{
+                  base: `flex m-0 bg-[#111111] hover:bg-[#161616] items-center justify-between cursor-pointer rounded-xl gap-4 p-4 border border-[#262626] data-[selected=true]:border-white max-w-full`,
+                  label: 'w-full',
+                }}
               >
-                <input
-                  type="radio"
-                  name="paymentType"
-                  value="wallet"
-                  checked={paymentType === 'wallet'}
-                  onChange={() => setPaymentType('wallet')}
-                  className="mt-1 text-primary focus:ring-primary"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="w-5 h-5 text-purple-600" />
-                    <span className="font-bold text-xs text-text-main">
-                      {locale === 'ar' ? 'إنستاباي ومحافظ الهاتف (Instapay / Vodafone Cash)' : 'Instapay & Mobile Wallets'}
-                    </span>
+                <div className="w-full flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-purple-400" />
+                      <span className="font-bold text-xs text-white">
+                        {locale === 'ar' ? 'إنستاباي ومحافظ الهاتف (Instapay / Wallets)' : 'Instapay & Mobile Wallets'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {locale === 'ar'
+                        ? 'تحويل فوري عبر شبكة المدفوعات اللحظية IPN أو محافظ فودافون كاش.'
+                        : 'Instant transfer via IPN or mobile wallets.'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-text-muted">
-                    {locale === 'ar'
-                      ? 'تحويل فوري عبر شبكة المدفوعات اللحظية IPN أو محافظ فودافون وأورنج واتصالات كاش.'
-                      : 'Instant transfer via IPN or mobile wallets.'}
-                  </p>
                 </div>
-              </label>
-            </div>
-          </div>
+              </Radio>
+            </RadioGroup>
+          </Card>
         </div>
 
         {/* Right Summary: Multi-Vendor Packages Breakdown & Place Order (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Multi-Vendor Packages Card */}
-          <div className="p-6 rounded-2xl border border-border-color bg-bg-secondary/30 space-y-5 shadow-sm">
+          <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-text-main">
+              <h2 className="text-base font-bold text-white tracking-tight">
                 {locale === 'ar' ? 'شحنات التجار المنفصلة' : 'Merchant Shipments'}
               </h2>
-              <span className="text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">
+              <Chip size="sm" variant="flat" className="bg-[#171717] text-white border border-[#262626] font-mono">
                 {cart.vendorGroups.length} {locale === 'ar' ? 'شحنات' : 'packages'}
-              </span>
+              </Chip>
             </div>
 
             {/* Explanatory Multi-Vendor Alert */}
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] text-xs text-neutral-300 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-neutral-400 flex-shrink-0 mt-0.5" />
               <p className="leading-relaxed">
                 {locale === 'ar'
-                  ? `أنت تشتري من ${cart.vendorGroups.length} تجار معتمدين. يتم شحن كل طرد مباشرة من مستودع التاجر لتسريع وصول القطع لورشتك.`
+                  ? `أنت تشتري من ${cart.vendorGroups.length} تجار معتمدين. يتم شحن كل طرد مباشرة من مستودع التاجر لتسريع وصول القطع.`
                   : `You are purchasing from ${cart.vendorGroups.length} verified vendors. Each package ships directly from the merchant warehouse.`}
               </p>
             </div>
 
             {/* Vendor Groups Preview */}
             <div className="space-y-3">
-              {cart.vendorGroups.map((group, idx) => (
+              {cart.vendorGroups.map((group) => (
                 <div
                   key={group.merchantId}
-                  className="p-3.5 rounded-xl border border-border-color bg-bg-primary text-xs space-y-2"
+                  className="p-3.5 rounded-xl border border-[#262626] bg-[#111111] text-xs space-y-2"
                 >
-                  <div className="flex items-center justify-between font-bold text-text-main">
+                  <div className="flex items-center justify-between font-bold text-white">
                     <span className="flex items-center gap-1.5">
-                      <Store className="w-3.5 h-3.5 text-primary" />
+                      <Store className="w-3.5 h-3.5 text-neutral-400" />
                       {group.merchantName}
                     </span>
-                    <span className="font-mono text-primary">
+                    <span className="font-mono text-white">
                       {formatMoney(group.subtotal + group.estimatedDeliveryFee, locale)}
                     </span>
                   </div>
 
-                  <div className="divide-y divide-border-color/60 text-[11px] text-text-muted">
+                  <div className="divide-y divide-[#262626] text-[11px] text-neutral-400">
                     {group.items.map((it) => (
                       <div key={it.id} className="py-1 flex justify-between">
                         <span className="truncate max-w-[200px]">
                           {it.quantity}× {it.product.name}
                         </span>
-                        <span className="font-mono">{formatMoney(it.totalPrice, locale)}</span>
+                        <span className="font-mono text-neutral-300">{formatMoney(it.totalPrice, locale)}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-emerald-600 pt-1 border-t border-border-color/40">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                  <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-1 border-t border-[#262626]">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Clock className="w-3 h-3 text-emerald-400" />
                       {group.estimatedDeliveryEta}
                     </span>
-                    <span>
+                    <span className="font-mono">
                       {locale === 'ar' ? 'توصيل:' : 'Delivery:'}{' '}
-                      <strong>{formatMoney(group.estimatedDeliveryFee, locale)}</strong>
+                      <strong className="text-white">{formatMoney(group.estimatedDeliveryFee, locale)}</strong>
                     </span>
                   </div>
                 </div>
@@ -523,71 +528,69 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({ locale }) => {
             </div>
 
             {/* Calculations Breakdown */}
-            <div className="space-y-2 text-xs border-t border-border-color pt-4 text-text-muted">
+            <div className="space-y-2 text-xs border-t border-[#262626] pt-4 text-neutral-400 font-mono">
               <div className="flex justify-between">
                 <span>{t.cart.subtotal}</span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.subtotal, locale)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>{t.cart.deliveryFee}</span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.totalDeliveryFee, locale)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>{t.cart.serviceFee}</span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.platformServiceFee, locale)}
                 </span>
               </div>
               {cart.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 font-bold">
+                <div className="flex justify-between text-emerald-400 font-bold">
                   <span>{locale === 'ar' ? 'خصم الكوبون' : 'Coupon Discount'}</span>
-                  <span className="font-mono">-{formatMoney(cart.discountAmount, locale)}</span>
+                  <span>-{formatMoney(cart.discountAmount, locale)}</span>
                 </div>
               )}
             </div>
 
             {/* Grand Total */}
-            <div className="flex items-baseline justify-between border-t border-border-color pt-4">
+            <div className="flex items-baseline justify-between border-t border-[#262626] pt-4">
               <div>
-                <span className="text-sm font-bold text-text-main block">{t.cart.total}</span>
-                <span className="text-[11px] text-text-muted">
+                <span className="text-sm font-bold text-white block">{t.cart.total}</span>
+                <span className="text-[11px] text-neutral-500 font-mono">
                   {locale === 'ar' ? 'شامل ضريبة القيمة المضافة 14%' : 'Includes 14% VAT'}
                 </span>
               </div>
-              <span className="text-2xl font-black text-primary font-mono">
+              <span className="text-2xl font-black text-white font-mono">
                 {formatMoney(cart.totalAmount, locale)}
               </span>
             </div>
 
             {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Submit Order Button */}
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              isLoading={loading}
+              className="w-full bg-white text-black font-bold text-sm hover:bg-neutral-200 transition-colors py-6 shadow-sm"
+              startContent={!loading && <Lock className="w-4 h-4" />}
             >
-              <Lock className="w-4 h-4" />
-              <span>
-                {loading
-                  ? locale === 'ar'
-                    ? 'جاري تأكيد وتجهيز الطلب...'
-                    : 'Processing Order...'
-                  : locale === 'ar'
-                  ? 'تأكيد الطلب الآن'
-                  : 'Confirm & Place Order'}
-              </span>
-            </button>
-          </div>
+              {loading
+                ? locale === 'ar'
+                  ? 'جاري تأكيد وتجهيز الطلب...'
+                  : 'Processing Order...'
+                : locale === 'ar'
+                ? 'تأكيد الطلب الآن'
+                : 'Confirm & Place Order'}
+            </Button>
+          </Card>
         </div>
       </form>
     </div>

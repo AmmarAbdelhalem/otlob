@@ -3,6 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
+  Card,
+  CardHeader,
+  CardBody,
+  Tabs,
+  Tab,
+  Select,
+  SelectItem,
+  Input,
+  Button,
+  Chip,
+  Divider,
+} from '@heroui/react';
+import {
   Car,
   Plus,
   Trash2,
@@ -10,7 +23,6 @@ import {
   Check,
   Search,
   ExternalLink,
-  ShieldCheck,
   AlertCircle,
 } from 'lucide-react';
 import { Locale, VehicleMake, VehicleModel } from '@/lib/api/types';
@@ -26,7 +38,7 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
   const t = getMessages(locale);
   const { vehicles, activeVehicle, addVehicle, removeVehicle, selectVehicle } = useGarageStore();
 
-  const [activeTab, setActiveTab] = useState<'picker' | 'vin'>('picker');
+  const [activeTab, setActiveTab] = useState<string>('picker');
   const [makes, setMakes] = useState<VehicleMake[]>([]);
   const [models, setModels] = useState<VehicleModel[]>([]);
   const [years, setYears] = useState<number[]>([]);
@@ -41,12 +53,10 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
   const [vinResult, setVinResult] = useState<{ make: string; model: string; year: number } | null>(null);
   const [vinError, setVinError] = useState(false);
 
-  // Fetch makes on mount
   useEffect(() => {
     services.vehicle.getMakes().then(setMakes);
   }, []);
 
-  // Fetch models when make changes
   useEffect(() => {
     if (!selectedMake) {
       setModels([]);
@@ -59,7 +69,6 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
     });
   }, [selectedMake]);
 
-  // Fetch years when model changes
   useEffect(() => {
     if (!selectedMake || !selectedModel) {
       setYears([]);
@@ -131,26 +140,26 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
   return (
     <div className="space-y-8">
       {/* Saved Vehicles List */}
-      <div className="p-6 rounded-2xl border border-border-color bg-bg-primary shadow-sm space-y-5">
+      <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-text-main flex items-center gap-2">
-              <Car className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Car className="w-5 h-5 text-white" />
               <span>{locale === 'ar' ? 'السيارات المحفوظة في جراجك' : 'Saved Vehicles in Your Garage'}</span>
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-xs text-neutral-400 mt-0.5">
               {locale === 'ar'
                 ? 'حدد سيارتك الحالية لتفعيل مؤشرات التوافق التلقائية في المتجر'
                 : 'Select your active vehicle to enable 100% fitment badges across the catalog'}
             </p>
           </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+          <Chip size="sm" variant="flat" className="bg-[#171717] text-white border border-[#262626] font-mono">
             {vehicles.length} {locale === 'ar' ? 'سيارات' : 'vehicles'}
-          </span>
+          </Chip>
         </div>
 
         {vehicles.length === 0 ? (
-          <div className="py-8 text-center text-xs text-text-muted">
+          <div className="py-8 text-center text-xs text-neutral-500 font-mono">
             {locale === 'ar' ? 'لا توجد سيارات مضافة حالياً. أضف سيارتك أدناه.' : 'No cars in your garage yet. Add one below.'}
           </div>
         ) : (
@@ -160,61 +169,63 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
               return (
                 <div
                   key={veh.id}
-                  className={`p-4 rounded-xl border-2 transition-all space-y-3 ${
+                  className={`p-4 rounded-xl border transition-all space-y-3 ${
                     isActive
-                      ? 'border-emerald-500 bg-emerald-50/40 shadow-sm'
-                      : 'border-border-color bg-bg-secondary/20 hover:border-text-muted'
+                      ? 'border-white bg-[#141414] shadow-sm'
+                      : 'border-[#262626] bg-[#111111] hover:border-neutral-600'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-extrabold text-sm text-text-main">
+                        <h3 className="font-bold text-sm text-white">
                           {veh.make} {veh.model} {veh.year}
                         </h3>
                         {isActive && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                          <Chip size="sm" color="success" variant="flat" className="font-mono text-[10px]">
                             {locale === 'ar' ? 'مفعلة للتسوق' : 'Active'}
-                          </span>
+                          </Chip>
                         )}
                       </div>
                       {veh.vin && (
-                        <p className="text-[11px] text-text-muted font-mono">
+                        <p className="text-[11px] text-neutral-400 font-mono">
                           VIN: {veh.vin}
                         </p>
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeVehicle(veh.id)}
-                      className="text-text-muted hover:text-rose-500 transition-colors p-1"
-                      title={locale === 'ar' ? 'حذف من الجراج' : 'Remove'}
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => removeVehicle(veh.id)}
+                      className="text-neutral-500 hover:text-rose-400 w-7 h-7 min-w-7"
+                      aria-label="Remove vehicle"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-border-color/60 text-xs">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-xs">
                     {!isActive ? (
                       <button
                         type="button"
                         onClick={() => selectVehicle(veh.id)}
-                        className="font-bold text-primary hover:underline flex items-center gap-1"
+                        className="font-bold text-white hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>{locale === 'ar' ? 'تفعيل هذه السيارة' : 'Make Active'}</span>
                       </button>
                     ) : (
-                      <span className="text-emerald-700 font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-400 font-bold flex items-center gap-1 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         <span>{locale === 'ar' ? 'جاهز للتسوق المتوافق' : 'Fitment Ready'}</span>
                       </span>
                     )}
 
                     <Link
                       href={`/${locale}/shop?make=${encodeURIComponent(veh.make)}&model=${encodeURIComponent(veh.model)}&year=${veh.year}`}
-                      className="text-primary hover:underline font-bold flex items-center gap-1 text-[11px]"
+                      className="text-neutral-300 hover:text-white underline font-semibold flex items-center gap-1 text-[11px]"
                     >
                       <span>{locale === 'ar' ? 'تسوق قطعها' : 'Shop Parts'}</span>
                       <ExternalLink className="w-3 h-3 rtl:rotate-180" />
@@ -225,162 +236,168 @@ export const GarageManagerView: React.FC<GarageManagerViewProps> = ({ locale }) 
             })}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Add New Vehicle Box */}
-      <div className="p-6 rounded-2xl border border-border-color bg-bg-primary shadow-sm space-y-5">
-        <h2 className="text-base font-bold text-text-main flex items-center gap-2 border-b border-border-color pb-3">
-          <Plus className="w-5 h-5 text-primary" />
+      <Card className="p-6 rounded-2xl border border-[#262626] bg-[#0a0a0a] shadow-sm space-y-5">
+        <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#262626] pb-3">
+          <Plus className="w-5 h-5 text-white" />
           <span>{locale === 'ar' ? 'إضافة سيارة جديدة إلى الجراج' : 'Add a New Vehicle'}</span>
         </h2>
 
-        {/* Tab switch: Make/Model vs VIN */}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('picker')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'picker'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-bg-secondary text-text-muted hover:text-text-main'
-            }`}
+        <Tabs
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(String(key))}
+          variant="solid"
+          classNames={{
+            tabList: 'bg-[#111111] border border-[#262626]',
+            cursor: 'bg-white text-black font-bold',
+            tab: 'text-neutral-400 data-[selected=true]:text-black text-xs font-semibold',
+          }}
+        >
+          <Tab
+            key="picker"
+            title={locale === 'ar' ? 'اختيار الماركة والموديل' : 'By Make, Model & Year'}
           >
-            {locale === 'ar' ? 'اختيار الماركة والموديل' : 'By Make, Model & Year'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('vin')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'vin'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-bg-secondary text-text-muted hover:text-text-main'
-            }`}
-          >
-            {locale === 'ar' ? 'برقم الشاسيه (VIN)' : 'By VIN Number'}
-          </button>
-        </div>
-
-        {activeTab === 'picker' ? (
-          <form onSubmit={handleAddFromPicker} className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-            <div className="space-y-1.5">
-              <label className="font-bold text-text-main block">
-                {locale === 'ar' ? 'الماركة' : 'Make'}
-              </label>
-              <select
-                required
-                value={selectedMake}
-                onChange={(e) => setSelectedMake(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 focus:outline-none focus:border-primary"
-              >
-                <option value="">{locale === 'ar' ? '-- اختر الماركة --' : '-- Select Make --'}</option>
-                {makes.map((m) => (
-                  <option key={m.id} value={m.name}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-text-main block">
-                {locale === 'ar' ? 'الموديل' : 'Model'}
-              </label>
-              <select
-                required
-                disabled={!selectedMake}
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 disabled:opacity-50 focus:outline-none focus:border-primary"
-              >
-                <option value="">{locale === 'ar' ? '-- اختر الموديل --' : '-- Select Model --'}</option>
-                {models.map((m) => (
-                  <option key={m.id} value={m.name}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-bold text-text-main block">
-                {locale === 'ar' ? 'سنة الصنع' : 'Year'}
-              </label>
-              <select
-                required
-                disabled={!selectedModel}
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 disabled:opacity-50 focus:outline-none focus:border-primary font-mono"
-              >
-                <option value="">{locale === 'ar' ? '-- السنة --' : '-- Year --'}</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                type="submit"
-                disabled={!selectedMake || !selectedModel || !selectedYear}
-                className="w-full h-10 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{locale === 'ar' ? 'إضافة للجراج' : 'Add to Garage'}</span>
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <form onSubmit={handleDecodeVin} className="flex gap-2">
-              <input
-                type="text"
-                placeholder={locale === 'ar' ? 'أدخل رقم الشاسيه (17 حرف/رقم - مثال: JTDBR32E123456789)...' : 'Enter 17-digit VIN (e.g. JTDBR32E123456789)...'}
-                value={vinInput}
-                onChange={(e) => setVinInput(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-border-color bg-bg-secondary/20 font-mono uppercase text-xs focus:outline-none focus:border-primary"
-              />
-              <button
-                type="submit"
-                disabled={vinLoading || vinInput.length < 5}
-                className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover shadow-sm transition-colors flex items-center gap-1.5"
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span>{vinLoading ? (locale === 'ar' ? 'فك التشفير...' : 'Decoding...') : (locale === 'ar' ? 'فك التشفير' : 'Decode')}</span>
-              </button>
-            </form>
-
-            {vinError && (
-              <p className="text-xs text-rose-500 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {locale === 'ar' ? 'تعذر فك تشفير رقم الشاسيه. يرجى التأكد من الرقم.' : 'Could not decode VIN. Please verify.'}
-              </p>
-            )}
-
-            {vinResult && (
-              <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <span className="text-[11px] font-bold text-emerald-800 uppercase block">
-                    {locale === 'ar' ? 'تم التعرف على السيارة بنجاح' : 'Vehicle Identified'}
-                  </span>
-                  <p className="font-extrabold text-sm text-emerald-950 mt-0.5">
-                    {vinResult.make} {vinResult.model} ({vinResult.year})
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddFromVin}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors"
+            <form onSubmit={handleAddFromPicker} className="pt-4 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <Select
+                  label={locale === 'ar' ? 'الماركة' : 'Make'}
+                  placeholder={locale === 'ar' ? 'اختر الماركة' : 'Select Make'}
+                  selectedKeys={selectedMake ? [selectedMake] : []}
+                  onChange={(e) => setSelectedMake(e.target.value)}
+                  size="sm"
+                  variant="bordered"
+                  classNames={{
+                    trigger: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    popoverContent: 'bg-[#0a0a0a] border border-[#262626]',
+                    label: 'text-neutral-400 font-medium text-xs',
+                  }}
                 >
-                  {locale === 'ar' ? 'تأكيد وإضافة للجراج' : 'Confirm & Add'}
-                </button>
+                  {makes.map((m) => (
+                    <SelectItem key={m.name} textValue={m.name} className="text-white hover:bg-[#1f1f1f]">
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </Select>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+
+              <div>
+                <Select
+                  label={locale === 'ar' ? 'الموديل' : 'Model'}
+                  placeholder={locale === 'ar' ? 'اختر الموديل' : 'Select Model'}
+                  selectedKeys={selectedModel ? [selectedModel] : []}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  isDisabled={!selectedMake}
+                  size="sm"
+                  variant="bordered"
+                  classNames={{
+                    trigger: 'border-[#262626] bg-[#111111] hover:border-neutral-600 disabled:opacity-40',
+                    popoverContent: 'bg-[#0a0a0a] border border-[#262626]',
+                    label: 'text-neutral-400 font-medium text-xs',
+                  }}
+                >
+                  {models.map((m) => (
+                    <SelectItem key={m.name} textValue={m.name} className="text-white hover:bg-[#1f1f1f]">
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <Select
+                  label={locale === 'ar' ? 'سنة الصنع' : 'Year'}
+                  placeholder={locale === 'ar' ? 'السنة' : 'Year'}
+                  selectedKeys={selectedYear ? [selectedYear] : []}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  isDisabled={!selectedModel}
+                  size="sm"
+                  variant="bordered"
+                  classNames={{
+                    trigger: 'border-[#262626] bg-[#111111] hover:border-neutral-600 disabled:opacity-40',
+                    popoverContent: 'bg-[#0a0a0a] border border-[#262626]',
+                    label: 'text-neutral-400 font-medium text-xs',
+                  }}
+                >
+                  {years.map((y) => (
+                    <SelectItem key={String(y)} textValue={String(y)} className="text-white hover:bg-[#1f1f1f] font-mono">
+                      {String(y)}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  type="submit"
+                  isDisabled={!selectedMake || !selectedModel || !selectedYear}
+                  className="w-full bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors py-5 disabled:opacity-40 shadow-sm"
+                  startContent={<Plus className="w-4 h-4" />}
+                >
+                  {locale === 'ar' ? 'إضافة للجراج' : 'Add to Garage'}
+                </Button>
+              </div>
+            </form>
+          </Tab>
+
+          <Tab
+            key="vin"
+            title={locale === 'ar' ? 'برقم الشاسيه (VIN)' : 'By VIN Number'}
+          >
+            <div className="pt-4 space-y-4">
+              <form onSubmit={handleDecodeVin} className="flex gap-2">
+                <Input
+                  size="sm"
+                  variant="bordered"
+                  placeholder={locale === 'ar' ? 'أدخل رقم الشاسيه (17 حرف/رقم)...' : 'Enter 17-digit VIN...'}
+                  value={vinInput}
+                  onChange={(e) => setVinInput(e.target.value)}
+                  classNames={{
+                    inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                    input: 'text-xs uppercase font-mono tracking-wider',
+                  }}
+                />
+                <Button
+                  type="submit"
+                  isLoading={vinLoading}
+                  isDisabled={vinInput.length < 5}
+                  className="bg-white text-black font-bold text-xs hover:bg-neutral-200 px-5 shadow-sm"
+                  startContent={!vinLoading && <Search className="w-3.5 h-3.5" />}
+                >
+                  {locale === 'ar' ? 'فك التشفير' : 'Decode'}
+                </Button>
+              </form>
+
+              {vinError && (
+                <p className="text-xs text-rose-400 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  {locale === 'ar' ? 'تعذر فك تشفير رقم الشاسيه. يرجى التأكد من الرقم.' : 'Could not decode VIN. Please verify.'}
+                </p>
+              )}
+
+              {vinResult && (
+                <div className="p-4 rounded-xl border border-white/20 bg-[#141414] flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <span className="text-[11px] font-mono font-bold text-neutral-400 uppercase block">
+                      {locale === 'ar' ? 'تم التعرف على السيارة بنجاح' : 'Vehicle Identified'}
+                    </span>
+                    <p className="font-bold text-sm text-white mt-0.5">
+                      {vinResult.make} {vinResult.model} ({vinResult.year})
+                    </p>
+                  </div>
+                  <Button
+                    onPress={handleAddFromVin}
+                    className="bg-white text-black font-bold text-xs hover:bg-neutral-200 px-4"
+                  >
+                    {locale === 'ar' ? 'تأكيد وإضافة للجراج' : 'Confirm & Add'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Tab>
+        </Tabs>
+      </Card>
     </div>
   );
 };

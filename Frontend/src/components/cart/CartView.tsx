@@ -4,6 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Button,
+  Input,
+  Chip,
+  Divider,
+} from '@heroui/react';
+import {
   ShoppingBag,
   Trash2,
   Plus,
@@ -18,7 +28,6 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { Locale } from '@/lib/api/types';
 import { useCartStore } from '@/stores/useCartStore';
@@ -46,19 +55,25 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
   const [inputCoupon, setInputCoupon] = useState('');
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputCoupon.trim()) return;
 
-    const res = await applyCoupon(inputCoupon);
-    if (res.success) {
-      setCouponSuccess(res.message);
-      setCouponError(null);
-      setInputCoupon('');
-    } else {
-      setCouponError(res.message);
-      setCouponSuccess(null);
+    setIsApplyingCoupon(true);
+    try {
+      const res = await applyCoupon(inputCoupon);
+      if (res.success) {
+        setCouponSuccess(res.message);
+        setCouponError(null);
+        setInputCoupon('');
+      } else {
+        setCouponError(res.message);
+        setCouponSuccess(null);
+      }
+    } finally {
+      setIsApplyingCoupon(false);
     }
   };
 
@@ -70,27 +85,28 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
 
   if (cart.items.length === 0) {
     return (
-      <div className="py-16 text-center space-y-6 max-w-md mx-auto">
-        <div className="w-24 h-24 mx-auto rounded-3xl bg-bg-secondary flex items-center justify-center text-text-muted border border-border-color shadow-inner">
-          <ShoppingBag className="w-12 h-12" />
+      <div className="py-24 text-center space-y-6 max-w-md mx-auto">
+        <div className="w-24 h-24 mx-auto rounded-3xl bg-[#0a0a0a] border border-[#262626] flex items-center justify-center text-neutral-500 shadow-inner">
+          <ShoppingBag className="w-12 h-12 opacity-50" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-black text-text-main">
+          <h1 className="text-2xl font-bold text-white tracking-tight">
             {locale === 'ar' ? 'سلة مشترياتك فارغة' : 'Your Shopping Cart is Empty'}
           </h1>
-          <p className="text-xs sm:text-sm text-text-muted">
+          <p className="text-xs sm:text-sm text-neutral-400">
             {locale === 'ar'
               ? 'لم تقم بإضافة أي قطع غيار حتى الآن. استعرض كتالوج المنتجات المتوافقة مع سيارتك.'
               : 'You have not added any spare parts yet. Explore catalog parts matching your car.'}
           </p>
         </div>
-        <Link
+        <Button
+          as={Link}
           href={`/${locale}/shop`}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover shadow-lg shadow-primary/25 transition-all"
+          className="bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-colors px-6 py-5 shadow-sm"
+          endContent={locale === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
         >
-          <span>{locale === 'ar' ? 'تصفح قطع الغيار الآن' : 'Browse Auto Parts Now'}</span>
-          {locale === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-        </Link>
+          {locale === 'ar' ? 'تصفح قطع الغيار الآن' : 'Browse Auto Parts Now'}
+        </Button>
       </div>
     );
   }
@@ -99,78 +115,80 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
     <div className="space-y-8">
       {/* Breadcrumb & Header */}
       <div className="space-y-2">
-        <nav className="flex items-center gap-2 text-xs text-text-muted">
-          <Link href={`/${locale}`} className="hover:text-primary transition-colors">
+        <nav className="flex items-center gap-2 text-xs text-neutral-400 font-mono">
+          <Link href={`/${locale}`} className="hover:text-white transition-colors">
             {locale === 'ar' ? 'الرئيسية' : 'Home'}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
-          <span className="text-text-main font-medium">{t.nav.cart}</span>
+          <span className="text-white font-medium">{t.nav.cart}</span>
         </nav>
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 className="text-2xl sm:text-3xl font-black text-text-main flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
             <span>{t.cart.title}</span>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+            <Chip size="sm" variant="flat" className="bg-[#171717] text-white border border-[#262626] font-mono">
               {cart.itemCount} {locale === 'ar' ? 'قطع' : 'items'}
-            </span>
+            </Chip>
           </h1>
-          <button
-            type="button"
-            onClick={clearCart}
-            className="text-xs text-rose-500 hover:text-rose-600 font-bold flex items-center gap-1.5 transition-colors"
+          <Button
+            size="sm"
+            variant="light"
+            onPress={clearCart}
+            className="text-neutral-400 hover:text-rose-400 text-xs font-semibold"
+            startContent={<Trash2 className="w-3.5 h-3.5" />}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{t.cart.clearCart}</span>
-          </button>
+            {t.cart.clearCart}
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Multi-Vendor Packages (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {cart.vendorGroups.map((group, groupIdx) => (
-            <div
+          {cart.vendorGroups.map((group) => (
+            <Card
               key={group.merchantId}
-              className="rounded-2xl border border-border-color bg-bg-primary overflow-hidden shadow-sm"
+              className="border border-[#262626] bg-[#0a0a0a] shadow-sm rounded-2xl overflow-hidden"
             >
               {/* Vendor Package Header */}
-              <div className="p-4 bg-bg-secondary/50 border-b border-border-color flex items-center justify-between flex-wrap gap-2 text-xs">
+              <CardHeader className="p-4 bg-[#111111] border-b border-[#262626] flex items-center justify-between flex-wrap gap-2 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <div className="w-7 h-7 rounded-lg bg-[#171717] border border-[#262626] text-white flex items-center justify-center font-bold">
                     <Store className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-text-main">
+                    <span className="font-bold text-white">
                       {locale === 'ar' ? 'شحنة من تاجر:' : 'Shipment from:'}{' '}
-                      <span className="text-primary">{group.merchantName}</span>
+                      <span className="text-neutral-300 font-normal">{group.merchantName}</span>
                     </span>
-                    <p className="text-[11px] text-text-muted flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3 text-emerald-600" />
+                    <p className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5 font-mono">
+                      <Clock className="w-3 h-3 text-emerald-400" />
                       <span>{group.estimatedDeliveryEta}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="text-end">
-                  <span className="text-text-muted">
+                  <span className="text-neutral-400 text-xs font-mono">
                     {locale === 'ar' ? 'رسوم التوصيل:' : 'Delivery:'}{' '}
-                    <strong className="text-text-main font-bold">
+                    <strong className="text-white font-bold">
                       {formatMoney(group.estimatedDeliveryFee, locale)}
                     </strong>
                   </span>
                 </div>
-              </div>
+              </CardHeader>
 
               {/* Items List in this vendor package */}
-              <div className="divide-y divide-border-color">
+              <CardBody className="p-0 divide-y divide-[#262626]">
                 {group.items.map((item) => (
                   <div
                     key={item.id}
                     className="p-4 sm:p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap"
                   >
                     {/* Image */}
-                    <div className="w-20 h-20 rounded-xl bg-bg-secondary/40 border border-border-color p-2 flex-shrink-0">
+                    <div className="w-20 h-20 rounded-xl bg-[#141414] border border-[#262626] p-2 flex-shrink-0 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.product.thumbnail}
+                        src={item.product.thumbnail || '/images/products/brake-pads.svg'}
                         alt=""
                         className="w-full h-full object-contain"
                       />
@@ -180,134 +198,147 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
                     <div className="flex-1 min-w-0 space-y-1">
                       <Link
                         href={`/${locale}/product/${item.product.sku}`}
-                        className="font-bold text-sm text-text-main hover:text-primary transition-colors line-clamp-2"
+                        className="font-bold text-sm text-white hover:underline transition-colors line-clamp-2"
                       >
                         {item.product.name}
                       </Link>
-                      <div className="flex items-center gap-3 text-xs text-text-muted font-mono flex-wrap">
+                      <div className="flex items-center gap-3 text-xs text-neutral-400 font-mono flex-wrap">
                         <span>SKU: {item.product.sku}</span>
-                        <span>•</span>
-                        <span>OEM: {item.product.oemNumber}</span>
+                        {item.product.oemNumber && (
+                          <>
+                            <span>•</span>
+                            <span>OEM: {item.product.oemNumber}</span>
+                          </>
+                        )}
                         {item.product.brand && (
                           <>
                             <span>•</span>
-                            <span className="text-primary font-sans font-semibold">
+                            <span className="text-white font-sans font-semibold">
                               {item.product.brand}
                             </span>
                           </>
                         )}
                       </div>
-                      <div className="text-xs text-text-muted">
+                      <div className="text-xs text-neutral-400 font-mono">
                         <span>{formatMoney(item.unitPrice, locale)}</span>
-                        <span className="text-text-muted/60"> / {locale === 'ar' ? 'قطعة' : 'unit'}</span>
+                        <span className="opacity-60"> / {locale === 'ar' ? 'قطعة' : 'unit'}</span>
                       </div>
                     </div>
 
                     {/* Quantity Stepper & Price */}
                     <div className="flex items-center gap-4 sm:flex-col sm:items-end justify-between w-full sm:w-auto">
-                      <div className="flex items-center border border-border-color rounded-xl bg-bg-secondary h-9">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                          className="px-2.5 text-text-muted hover:text-text-main transition-colors"
-                          disabled={item.quantity <= 1}
+                      <div className="flex items-center border border-[#262626] rounded-xl bg-[#111111] h-8">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => updateQuantity(item.productId, item.quantity - 1)}
+                          className="w-7 h-7 min-w-7 text-neutral-300 hover:text-white"
+                          isDisabled={item.quantity <= 1}
+                          aria-label="Decrease quantity"
                         >
                           <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="px-2.5 font-mono font-bold text-xs min-w-[28px] text-center">
+                        </Button>
+                        <span className="px-2 font-mono font-bold text-xs min-w-[28px] text-center text-white">
                           {item.quantity}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                          className="px-2.5 text-text-muted hover:text-text-main transition-colors"
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => updateQuantity(item.productId, item.quantity + 1)}
+                          className="w-7 h-7 min-w-7 text-neutral-300 hover:text-white"
+                          aria-label="Increase quantity"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </div>
 
                       <div className="text-end">
-                        <span className="text-base font-extrabold text-text-main block">
+                        <span className="text-base font-extrabold text-white block font-mono">
                           {formatMoney(item.totalPrice, locale)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.productId)}
-                          className="text-xs text-rose-500 hover:text-rose-700 transition-colors inline-flex items-center gap-1 mt-1"
+                        <Button
+                          size="sm"
+                          variant="light"
+                          onPress={() => removeItem(item.productId)}
+                          className="text-xs text-neutral-500 hover:text-rose-400 h-auto p-0 min-w-0"
+                          startContent={<Trash2 className="w-3 h-3" />}
                         >
-                          <Trash2 className="w-3 h-3" />
-                          <span>{locale === 'ar' ? 'حذف' : 'Remove'}</span>
-                        </button>
+                          {locale === 'ar' ? 'حذف' : 'Remove'}
+                        </Button>
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
+              </CardBody>
 
               {/* Package Subtotal Footer */}
-              <div className="p-3.5 bg-bg-secondary/20 border-t border-border-color flex items-center justify-between text-xs text-text-muted">
+              <CardFooter className="p-3.5 bg-[#111111] border-t border-[#262626] flex items-center justify-between text-xs text-neutral-400 font-mono">
                 <span>{locale === 'ar' ? 'إجمالي هذه الشحنة:' : 'Package Subtotal:'}</span>
-                <span className="font-bold text-text-main text-sm">
+                <span className="font-bold text-white text-sm">
                   {formatMoney(group.subtotal + group.estimatedDeliveryFee, locale)}
                 </span>
-              </div>
-            </div>
+              </CardFooter>
+            </Card>
           ))}
 
           {/* Continue Shopping Link */}
           <div className="flex items-center justify-between pt-2">
-            <Link
+            <Button
+              as={Link}
               href={`/${locale}/shop`}
-              className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
+              variant="light"
+              size="sm"
+              className="text-neutral-400 hover:text-white text-xs font-semibold p-0"
+              startContent={locale === 'ar' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
             >
-              {locale === 'ar' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
               <span>{t.cart.continueShopping}</span>
-            </Link>
+            </Button>
           </div>
         </div>
 
         {/* Right Column: Order Summary Sidebar (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Summary Box */}
-          <div className="p-6 rounded-2xl border border-border-color bg-bg-secondary/30 space-y-5 shadow-sm">
-            <h2 className="text-lg font-black text-text-main">
+          <Card className="border border-[#262626] bg-[#0a0a0a] shadow-sm rounded-2xl p-6 space-y-5">
+            <h2 className="text-lg font-bold text-white tracking-tight">
               {locale === 'ar' ? 'ملخص الطلب' : 'Order Summary'}
             </h2>
 
             {/* Price Calculations */}
-            <div className="space-y-3 text-xs border-b border-border-color pb-5">
-              <div className="flex justify-between text-text-muted">
+            <div className="space-y-3 text-xs border-b border-[#262626] pb-5 text-neutral-400 font-mono">
+              <div className="flex justify-between">
                 <span>{t.cart.subtotal}</span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.subtotal, locale)}
                 </span>
               </div>
 
-              <div className="flex justify-between text-text-muted">
+              <div className="flex justify-between">
                 <span className="flex items-center gap-1">
                   <span>{t.cart.deliveryFee}</span>
-                  <span className="text-[10px] text-text-muted/70">
+                  <span className="text-[10px] opacity-60">
                     ({cart.vendorGroups.length} {locale === 'ar' ? 'شحنات تجار' : 'packages'})
                   </span>
                 </span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.totalDeliveryFee, locale)}
                 </span>
               </div>
 
-              <div className="flex justify-between text-text-muted">
+              <div className="flex justify-between">
                 <span>{t.cart.serviceFee}</span>
-                <span className="font-mono font-bold text-text-main">
+                <span className="font-bold text-white">
                   {formatMoney(cart.platformServiceFee, locale)}
                 </span>
               </div>
 
               {cart.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 font-bold">
+                <div className="flex justify-between text-emerald-400 font-bold">
                   <span>
                     {locale === 'ar' ? `خصم الكوبون (${discountPercentage}%)` : `Coupon Discount (${discountPercentage}%)`}
                   </span>
-                  <span className="font-mono">
+                  <span>
                     -{formatMoney(cart.discountAmount, locale)}
                   </span>
                 </div>
@@ -317,12 +348,12 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
             {/* Grand Total */}
             <div className="flex items-baseline justify-between">
               <div>
-                <span className="text-sm font-bold text-text-main block">{t.cart.total}</span>
-                <span className="text-[11px] text-text-muted">
+                <span className="text-sm font-bold text-white block">{t.cart.total}</span>
+                <span className="text-[11px] text-neutral-500 font-mono">
                   {locale === 'ar' ? 'شامل ضريبة القيمة المضافة 14%' : 'Includes 14% VAT'}
                 </span>
               </div>
-              <span className="text-2xl font-black text-primary font-mono">
+              <span className="text-2xl font-black text-white font-mono">
                 {formatMoney(cart.totalAmount, locale)}
               </span>
             </div>
@@ -330,8 +361,8 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
             {/* Coupon Code Section */}
             <div className="pt-2">
               {couponCode ? (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-emerald-400">
                     <Tag className="w-4 h-4" />
                     <span>
                       {locale === 'ar' ? 'الكوبون المفعل:' : 'Active Coupon:'}{' '}
@@ -341,7 +372,7 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
                   <button
                     type="button"
                     onClick={handleRemoveCoupon}
-                    className="text-rose-500 hover:text-rose-700 font-bold text-xs"
+                    className="text-rose-400 hover:underline font-bold text-xs cursor-pointer"
                   >
                     {locale === 'ar' ? 'إلغاء' : 'Remove'}
                   </button>
@@ -349,28 +380,35 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
               ) : (
                 <form onSubmit={handleApplyCoupon} className="space-y-2">
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder={locale === 'ar' ? 'كود الخصم (جرب: OTLOB10)' : 'Coupon code (try: OTLOB10)'}
+                    <Input
+                      size="sm"
+                      variant="bordered"
+                      placeholder={t.cart.couponPlaceholder}
                       value={inputCoupon}
                       onChange={(e) => setInputCoupon(e.target.value)}
-                      className="flex-1 px-3 py-2 text-xs rounded-xl border border-border-color bg-bg-primary uppercase font-mono focus:outline-none focus:border-primary"
+                      classNames={{
+                        inputWrapper: 'border-[#262626] bg-[#111111] hover:border-neutral-600',
+                        input: 'text-xs uppercase font-mono',
+                      }}
                     />
-                    <button
+                    <Button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-bg-secondary text-text-main font-bold text-xs hover:bg-primary hover:text-white border border-border-color transition-colors"
+                      size="sm"
+                      variant="flat"
+                      isLoading={isApplyingCoupon}
+                      className="bg-[#171717] hover:bg-[#262626] text-white border border-[#262626] text-xs font-semibold px-4"
                     >
                       {t.cart.applyCoupon}
-                    </button>
+                    </Button>
                   </div>
                   {couponError && (
-                    <p className="text-[11px] text-rose-500 flex items-center gap-1">
+                    <p className="text-[11px] text-rose-400 flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" />
                       <span>{couponError}</span>
                     </p>
                   )}
                   {couponSuccess && (
-                    <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                    <p className="text-[11px] text-emerald-400 flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" />
                       <span>{couponSuccess}</span>
                     </p>
@@ -380,19 +418,20 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
             </div>
 
             {/* Checkout Action Button */}
-            <Link
+            <Button
+              as={Link}
               href={`/${locale}/checkout`}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary-hover text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full bg-white text-black font-bold text-sm hover:bg-neutral-200 transition-colors py-6 shadow-sm"
+              endContent={locale === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
             >
               <span>{t.cart.checkout}</span>
-              {locale === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-            </Link>
-          </div>
+            </Button>
+          </Card>
 
           {/* Guarantees Box */}
-          <div className="p-4 rounded-xl border border-border-color bg-bg-primary space-y-3 text-xs text-text-muted">
+          <div className="p-4 rounded-xl border border-[#262626] bg-[#0a0a0a] space-y-3 text-xs text-neutral-400">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-white flex-shrink-0" />
               <span>
                 {locale === 'ar'
                   ? 'قطع أصلية ومضمونة 100% مع حق المعاينة عند الاستلام'
@@ -400,7 +439,7 @@ export const CartView: React.FC<CartViewProps> = ({ locale }) => {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <Truck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <Truck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
               <span>
                 {locale === 'ar'
                   ? 'توصيل سريع وتتبع لحظي لمندوب الشحن على الخريطة'
